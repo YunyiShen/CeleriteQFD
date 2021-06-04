@@ -9,9 +9,8 @@ observed <- 1 * (!is.na(timeseries))
 
 timeseries[is.na(timeseries)] <- timeseries[1]
 
-T <- length(timeseries)
 
-star_stan <- list(T=T,
+star_stan <- list(T=length(timeseries),
                     K=2, 
                     y = timeseries,
                     observed = observed, 
@@ -21,6 +20,22 @@ star_stan <- list(T=T,
                     shape = 0.001,
                     rate = 0.001)
 
-fit <- stan(file = './Stan/Vanilla.stan', data = star_stan, 
+fit <- stan(file = './Stan/Vanilla.stan',model_name = "star_vanilla",data = star_stan, 
                 iter = 3000, control = list(adapt_delta = .8))
 plot(fit)
+
+# for Win using cmdstan
+library(cmdstanr)
+
+file <- './Stan/Vanilla.stan'
+mod <- cmdstan_model(file)
+
+fit <- mod$sample(
+  data = star_stan,
+  seed = 123,
+  chains = 4,
+  parallel_chains = 4
+)
+
+fit$save_object(file = "./Stan/vanilla_star.RDS")
+
