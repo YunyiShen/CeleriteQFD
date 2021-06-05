@@ -2,6 +2,13 @@
     "files.associations": {
         "*.rmd": "markdown",
         "armadillo": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "*.ipp": "cpp",
+        "iosfwd": "cpp",
+        "core": "cpp",
+        "fft": "cpp",
+        "kroneckerproduct": "cpp",
+        "numericaldiff": "cpp",
+        "splines": "cpp"
     }
 }
