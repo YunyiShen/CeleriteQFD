@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.rmd": "markdown",
+        "armadillo": "cpp",
+        "random": "cpp"
+    }
+}

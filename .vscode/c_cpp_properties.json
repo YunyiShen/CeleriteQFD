@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${env:HOME}/R/x86_64-pc-linux-gnu-library/3.6/RcppArmadillo/include",
+                "${env:HOME}/R/x86_64-pc-linux-gnu-library/3.6/RcppProgress/include",
+                "${env:HOME}/R/x86_64-pc-linux-gnu-library/3.6/RcppEigen/include",
+                "${env:HOME}/R/x86_64-pc-linux-gnu-library/3.6/RcppParallel/include",
+                "${env:HOME}/R/x86_64-pc-linux-gnu-library/3.6/Rcpp/include",
+                "${env:HOME}/R/x86_64-pc-linux-gnu-library/3.6",
+                "/usr/share/R/include"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}
