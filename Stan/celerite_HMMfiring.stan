@@ -1,0 +1,1 @@
+#include celerite_HMMfiring.stan
