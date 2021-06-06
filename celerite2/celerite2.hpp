@@ -1247,7 +1247,7 @@ logLikSHO(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   temp = a.array();
   temp = temp.inverse() * Z.array();
   Z = temp.matrix();
-  interfaces::solve_upper(tloc,c,U,V,yloc,Z,F_out);
+  interfaces::solve_upper(tloc, c, U, V, Z, Z);
   return(-0.5 * sum(log(a))-0.5 * y.transpose() * Z); 
   //return 0;
 }
@@ -1322,7 +1322,7 @@ logLikRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   temp = a.array();
   temp = temp.inverse() * Z.array();
   Z = temp.matrix();
-  interfaces::solve_upper(tloc, c, U, V, yloc, Z);
+  interfaces::solve_upper(tloc, c, U, V, Z, Z);
   return(-0.5 * sum(log(a))-0.5 * y.transpose() * Z); 
   
 }

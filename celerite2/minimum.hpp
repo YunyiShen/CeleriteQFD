@@ -1233,9 +1233,6 @@ logLikSHO(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
 
   std::tie (c, a, U, V) = curr_SHOTerm.get_celerite_matrices(tloc,diag);// get those magic matrixes
   Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> Z;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> d_out;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> S_out;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> F_out;
   Eigen::Index flag;
   flag = interfaces::factor(tloc, c, a, U, V, a, V); // to reuse memory
   // now a is d (the diagonal of the Chol decomposition), and V is the W
@@ -1247,7 +1244,7 @@ logLikSHO(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   temp = a.array();
   temp = temp.inverse() * Z.array();
   Z = temp.matrix();
-  interfaces::solve_upper(tloc,c,U,V,yloc,Z,F_out);
+  interfaces::solve_upper(tloc, c, U, V, Z, Z);
   return(-0.5 * sum(log(a))-0.5 * y.transpose() * Z); 
   //return 0;
 }
@@ -1322,7 +1319,7 @@ logLikRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   temp = a.array();
   temp = temp.inverse() * Z.array();
   Z = temp.matrix();
-  interfaces::solve_upper(tloc, c, U, V, yloc, Z);
+  interfaces::solve_upper(tloc, c, U, V, Z, Z);
   return(-0.5 * sum(log(a))-0.5 * y.transpose() * Z); 
   
 }
