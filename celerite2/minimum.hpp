@@ -2,6 +2,8 @@
 //#define _CELERITE2_STANINTERFACE_HPP_DEFINED_
 
 #include <Eigen/Core>
+#include <iostream>
+using namespace std;
 
 
 /* #include <stan/model/model_header.hpp>
@@ -15,8 +17,6 @@ using stan::math::lgamma;
 using stan::model::prob_grad;
 using namespace stan::math; */
 
-namespace celerite2
-{
 
 
 #define UNUSED(x) (void)(x)
@@ -317,7 +317,8 @@ void backward_rev(const Eigen::MatrixBase<Input> &t,                      // (N,
 
 }
 
-namespace forwardalgo {
+/// original name space forward
+namespace forward{
 /**
  * \brief Get the dense representation of a celerite matrix
  *
@@ -703,9 +704,231 @@ void general_matmul_upper(const Eigen::MatrixBase<Input> &t1,               // (
   }
 }
 
+} 
+// interface
+
+
+
+#define MakeEmptyWork(BaseType)                                                                                                                      \
+  typedef typename BaseType::Scalar Scalar;                                                                                                          \
+  typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Empty;                                                              \
+  Empty
+
+namespace interfaces {
+
+
+
+/**
+ * \brief Compute the Cholesky factorization of the system
+ *
+ * This computes `d` and `W` such that:
+ *
+ * `diag(a) + tril(U*V^T) + triu(V*U^T) = L*diag(d)*L^T`
+ *
+ * where
+ *
+ * `L = 1 + tril(U*W^T)`
+ *
+ * This can be safely applied in place: `d_out` can point to `a` and `W_out` can
+ * point to `V`, and the memory will be reused.
+ *
+ * @param t     (N,): The input coordinates (must be sorted)
+ * @param c     (J,): The transport coefficients
+ * @param a     (N,): The diagonal component
+ * @param U     (N, J): The first low rank matrix
+ * @param V     (N, J): The second low rank matrix
+ * @param d_out (N,): The diagonal component of the Cholesky factor
+ * @param W_out (N, J): The second low rank component of the Cholesky factor
+ */
+template <typename Input, typename Coeffs, typename Diag, typename LowRank, typename DiagOut, typename LowRankOut>
+Eigen::Index factor(const Eigen::MatrixBase<Input> &t,         // (N,)
+                    const Eigen::MatrixBase<Coeffs> &c,        // (J,)
+                    const Eigen::MatrixBase<Diag> &a,          // (N,)
+                    const Eigen::MatrixBase<LowRank> &U,       // (N, J)
+                    const Eigen::MatrixBase<LowRank> &V,       // (N, J)
+                    Eigen::MatrixBase<DiagOut> const &d_out,   // (N,)
+                    Eigen::MatrixBase<LowRankOut> const &W_out // (N, J)
+) {
+  MakeEmptyWork(Diag) S;
+  return forward::factor<false>(t, c, a, U, V, d_out, W_out, S);
 }
 
-namespace terms {
+/**
+ * \brief Compute the solution of a lower triangular linear equation
+ *
+ * This computes `Z` such that:
+ *
+ * `Y = L * Y`
+ *
+ * where
+ *
+ * `L = 1 + tril(U*W^T)`
+ *
+ * This can be safely applied in place.
+ *
+ * @param t     (N,): The input coordinates (must be sorted)
+ * @param c     (J,): The transport coefficients
+ * @param U     (N, J): The first low rank matrix
+ * @param W     (N, J): The second low rank matrix
+ * @param Y     (N, Nrhs): The right hand side
+ * @param Z_out (N, Nrhs): The solution of this equation
+ */
+template <typename Input, typename Coeffs, typename LowRank, typename RightHandSide, typename RightHandSideOut>
+void solve_lower(const Eigen::MatrixBase<Input> &t,               // (N,)
+                 const Eigen::MatrixBase<Coeffs> &c,              // (J,)
+                 const Eigen::MatrixBase<LowRank> &U,             // (N, J)
+                 const Eigen::MatrixBase<LowRank> &W,             // (N, J)
+                 const Eigen::MatrixBase<RightHandSide> &Y,       // (N, nrhs)
+                 Eigen::MatrixBase<RightHandSideOut> const &Z_out // (N, nrhs)
+) {
+  MakeEmptyWork(Input) F;
+  forward::solve_lower<false>(t, c, U, W, Y, Z_out, F);
+}
+
+/**
+ * \brief Compute the solution of a upper triangular linear equation
+ *
+ * This computes `Z` such that:
+ *
+ * `Y = L^T * Y`
+ *
+ * where
+ *
+ * `L = 1 + tril(U*W^T)`
+ *
+ * This can be safely applied in place.
+ *
+ * @param t     (N,): The input coordinates (must be sorted)
+ * @param c     (J,): The transport coefficients
+ * @param U     (N, J): The first low rank matrix
+ * @param W     (N, J): The second low rank matrix
+ * @param Y     (N, Nrhs): The right hand side
+ * @param Z_out (N, Nrhs): The solution of this equation
+ */
+template <typename Input, typename Coeffs, typename LowRank, typename RightHandSide, typename RightHandSideOut>
+void solve_upper(const Eigen::MatrixBase<Input> &t,               // (N,)
+                 const Eigen::MatrixBase<Coeffs> &c,              // (J,)
+                 const Eigen::MatrixBase<LowRank> &U,             // (N, J)
+                 const Eigen::MatrixBase<LowRank> &W,             // (N, J)
+                 const Eigen::MatrixBase<RightHandSide> &Y,       // (N, nrhs)
+                 Eigen::MatrixBase<RightHandSideOut> const &Z_out // (N, nrhs)
+) {
+  MakeEmptyWork(Input) F;
+  forward::solve_upper<false>(t, c, U, W, Y, Z_out, F);
+}
+
+/**
+ * \brief Apply a strictly lower matrix multiply
+ *
+ * This computes:
+ *
+ * `Z += tril(U * V^T) * Y`
+ *
+ * where `tril` is the strictly lower triangular function.
+ *
+ * Note that this will *update* the value of `Z`.
+ *
+ * @param t     (N,): The input coordinates (must be sorted)
+ * @param c     (J,): The transport coefficients
+ * @param U     (N, J): The first low rank matrix
+ * @param V     (N, J): The second low rank matrix
+ * @param Y     (N, Nrhs): The matrix to be multiplied
+ * @param Z_out (N, Nrhs): The matrix to be updated
+ */
+template <typename Input, typename Coeffs, typename LowRank, typename RightHandSide, typename RightHandSideOut>
+void matmul_lower(const Eigen::MatrixBase<Input> &t,               // (N,)
+                  const Eigen::MatrixBase<Coeffs> &c,              // (J,)
+                  const Eigen::MatrixBase<LowRank> &U,             // (N, J)
+                  const Eigen::MatrixBase<LowRank> &V,             // (N, J)
+                  const Eigen::MatrixBase<RightHandSide> &Y,       // (N, nrhs)
+                  Eigen::MatrixBase<RightHandSideOut> const &Z_out // (N, nrhs)
+) {
+  MakeEmptyWork(Input) F;
+  forward::matmul_lower<false>(t, c, U, V, Y, Z_out, F);
+}
+
+/**
+ * \brief Apply a strictly upper matrix multiply
+ *
+ * This computes:
+ *
+ * `Z += triu(V * U^T) * Y`
+ *
+ * where `triu` is the strictly lower triangular function.
+ *
+ * Note that this will *update* the value of `Z`.
+ *
+ * @param t     (N,): The input coordinates (must be sorted)
+ * @param c     (J,): The transport coefficients
+ * @param U     (N, J): The first low rank matrix
+ * @param V     (N, J): The second low rank matrix
+ * @param Y     (N, Nrhs): The matrix to be multiplied
+ * @param Z_out (N, Nrhs): The matrix to be updated
+ */
+template <typename Input, typename Coeffs, typename LowRank, typename RightHandSide, typename RightHandSideOut>
+void matmul_upper(const Eigen::MatrixBase<Input> &t,               // (N,)
+                  const Eigen::MatrixBase<Coeffs> &c,              // (J,)
+                  const Eigen::MatrixBase<LowRank> &U,             // (N, J)
+                  const Eigen::MatrixBase<LowRank> &V,             // (N, J)
+                  const Eigen::MatrixBase<RightHandSide> &Y,       // (N, nrhs)
+                  Eigen::MatrixBase<RightHandSideOut> const &Z_out // (N, nrhs)
+) {
+  MakeEmptyWork(Input) F;
+  forward::matmul_upper<false>(t, c, U, V, Y, Z_out, F);
+}
+
+/**
+ * \brief The general lower-triangular dot product of a rectangular celerite system
+ *
+ * @param t1     (N,): The left input coordinates (must be sorted)
+ * @param t2     (M,): The right input coordinates (must be sorted)
+ * @param c      (J,): The transport coefficients
+ * @param U      (N, J): The first low rank matrix
+ * @param V      (M, J): The second low rank matrix
+ * @param Y      (M, Nrhs): The matrix that will be multiplied
+ * @param Z_out  (N, Nrhs): The result of the operation
+ */
+template <typename Input, typename Coeffs, typename LowRank, typename RightHandSide, typename RightHandSideOut>
+void general_matmul_lower(const Eigen::MatrixBase<Input> &t1,              // (N,)
+                          const Eigen::MatrixBase<Input> &t2,              // (M,)
+                          const Eigen::MatrixBase<Coeffs> &c,              // (J,)
+                          const Eigen::MatrixBase<LowRank> &U,             // (N, J)
+                          const Eigen::MatrixBase<LowRank> &V,             // (M, J)
+                          const Eigen::MatrixBase<RightHandSide> &Y,       // (M, nrhs)
+                          Eigen::MatrixBase<RightHandSideOut> const &Z_out // (N, nrhs)
+) {
+  MakeEmptyWork(Input) F;
+  forward::general_matmul_lower<false>(t1, t2, c, U, V, Y, Z_out, F);
+}
+
+/**
+ * \brief The general upper-triangular dot product of a rectangular celerite system
+ *
+ * @param t1     (N,): The left input coordinates (must be sorted)
+ * @param t2     (M,): The right input coordinates (must be sorted)
+ * @param c      (J,): The transport coefficients
+ * @param U      (N, J): The first low rank matrix
+ * @param V      (M, J): The second low rank matrix
+ * @param Y      (M, Nrhs): The matrix that will be multiplied
+ * @param Z_out  (N, Nrhs): The result of the operation
+ */
+template <typename Input, typename Coeffs, typename LowRank, typename RightHandSide, typename RightHandSideOut>
+void general_matmul_upper(const Eigen::MatrixBase<Input> &t1,              // (N,)
+                          const Eigen::MatrixBase<Input> &t2,              // (M,)
+                          const Eigen::MatrixBase<Coeffs> &c,              // (J,)
+                          const Eigen::MatrixBase<LowRank> &U,             // (N, J)
+                          const Eigen::MatrixBase<LowRank> &V,             // (M, J)
+                          const Eigen::MatrixBase<RightHandSide> &Y,       // (M, nrhs)
+                          Eigen::MatrixBase<RightHandSideOut> const &Z_out // (N, nrhs)
+) {
+  MakeEmptyWork(Input) F;
+  forward::general_matmul_upper<false>(t1, t2, c, U, V, Y, Z_out, F);
+}
+
+}
+
+namespace terms{
+
 #ifndef CELERITE_MAX_WIDTH
 #define CELERITE_MAX_WIDTH 32
 #endif
@@ -977,46 +1200,6 @@ class SHOTerm : public Term<T, 2> {
 
 }
 
-namespace likelihood {
-
-template <typename T0__, typename T1__, typename T2__, typename T3__, typename T4__, typename T5__, typename T6__>
-typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__>::type>::type
-logLikSHO(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
-              const Eigen::Matrix<T1__, Eigen::Dynamic, 1>& y,
-              const T2__& S0,
-              const T3__& w0,
-              const T4__& Q,
-              const T5__& eps,
-              const Eigen::Matrix<T6__, Eigen::Dynamic, 1>& diag, std::ostream* pstream__){
-  typedef typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__>::type>::type local_scalar_t__;
-  typedef local_scalar_t__ fun_return_scalar_t__;
-    // declear a SHO term
-  terms::SHOTerm<local_scalar_t__> curr_SHOTerm(S0, w0, Q, eps);
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> c;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> a;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> U;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> V;
-
-  std::tie (c, a, U, V) = curr_SHOTerm.get_celerite_matrices(t,diag);// get those magic matrixes
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> Z;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> d_out;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> S_out;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> F_out;
-  Eigen::Index placeholder;
-  placeholder = forwardalgo::factor(t, c, a, U, V, a, V, S_out); // to reuse memory
-  // now a is d (the diagonal of the Chol decomposition), and V is the W
-  // s.t. `K = L*diag(d)*L^T`, `L = 1 + tril(U*W^T)`
-  // lower solver, see python lib celerite2/celerite2.py#L218
-  forwardalgo::solve_lower(t, c, U, V, y, Z, F_out);
-    
-  Eigen::Array<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> temp;
-  temp = a.array();
-  temp = temp.inverse() * Z.array();
-  Z = temp.matrix();
-  forwardalgo::solve_upper(t,c,U,V,y,Z,F_out);
-  return(-0.5 * sum(log(a))-0.5 * y.transpose() * Z); 
-  //return 0;
-}
 
 template <typename T0__, typename T1__, typename T2__, typename T3__, typename T4__, typename T5__, typename T6__, typename T7__, typename T8__>
 typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__, T7__, typename boost::math::tools::promote_args<T8__>::type>::type>::type
@@ -1030,11 +1213,18 @@ logLikRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
                    const T7__& eps,
                    const Eigen::Matrix<T8__, Eigen::Dynamic, 1>& diag, 
                    std::ostream* pstream__) {
-    typedef typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__, T7__, typename boost::math::tools::promote_args<T8__>::type>::type>::type local_scalar_t__;
+    typedef typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__, T7__, typename boost::math::tools::promote_args<T8__>::type>::type>::type  local_scalar_t__;
+    //typedef double local_scalar_t__;
     typedef local_scalar_t__ fun_return_scalar_t__;
 
+  // local copy of data, for whatever reason it is necessary for the solver
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> tloc;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> yloc;
+  tloc = t;
+  yloc = y;
+
   // two component of SHO:
-  local_scalar_t__ S1, w1, Q1, S2, w2, Q2, amp;
+  local_scalar_t__ S1, w1, Q1, S2, w2, Q2, amp, epslocal;
   amp =  sigma * sigma/ (1 + f);
   Q1 = 0.5 + Q0 + dQ;
   w1 = 4 * 3.1415926 * Q1 / (period * stan::math::sqrt(4 * Q1 * Q1 - 1));
@@ -1042,43 +1232,49 @@ logLikRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   Q2 = 0.5 + Q0;
   w2 = 8 * 3.1415926 * Q2 / (period * stan::math::sqrt(4 * Q2 * Q2 - 1));
   S2 = f * amp / (w2 * Q2);
+   
+  //  // get the two terms and add them up
+  //SHOTerm<double> curr_SHOTerm1(1.0,1.0,1.0);
+  terms::RealTerm<local_scalar_t__> sth(amp,amp);
+  //Term<local_scalar_t__> rotation();
+  //rotation = sth + sth;
+  //SHOTerm<local_scalar_t__> curr_SHOTerm2(amp,amp,amp,amp);
+  // terms::SHOTerm<local_scalar_t__> curr_SHOTerm2(S2, w2, Q2, eps);
+  // terms::Term<local_scalar_t__> Rotation = curr_SHOTerm1 + curr_SHOTerm2;
+  //Term<double,2> SHO2;
+  //Term<double,2> SHO1;
+  terms::Term<local_scalar_t__,1> Rotation;
+  Rotation = sth;
+  //SHO1 = curr_SHOTerm1;
+  //SHO2 = curr_SHOTerm1;
+  //Rotation = SHO1+SHO2;
+  //curr_SHOTerm1 = curr_SHOTerm1 + curr_SHOTerm1;
 
-   // get the two terms and add them up
-  terms::SHOTerm<local_scalar_t__> curr_SHOTerm1(S1, w1, Q1, eps);
-  terms::SHOTerm<local_scalar_t__> curr_SHOTerm2(S2, w2, Q2, eps);
-  terms::Term<local_scalar_t__> Rotation = curr_SHOTerm1 + curr_SHOTerm2;
-
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> c;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> a;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> c;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> a;
   Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> U;
   Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> V;
 
   std::tie (c, a, U, V) = Rotation.get_celerite_matrices(t,diag);// get those magic matrixes
 
+  Eigen::Index flag;
 
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> Z;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> d_out;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> S_out;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> F_out;
-  Eigen::Index placeholder;
-
-  placeholder = forwardalgo::factor(t, c, a, U, V, a, V, S_out); // to reuse memory
-  // now a is d (the diagonal of the Chol decomposition), and V is the W
-  // s.t. `K = L*diag(d)*L^T`, `L = 1 + tril(U*W^T)`
-  // lower solver, see python lib celerite2/celerite2.py#L218
-  forwardalgo::solve_lower(t, c, U, V, y, Z, F_out);
+  flag = interfaces::factor(t, c, a, U, V, a, V); // to reuse memory
+  //cout << V(0) << endl;
+  // // now a is d (the diagonal of the Chol decomposition), and V is the W
+  // // s.t. `K = L*diag(d)*L^T`, `L = 1 + tril(U*W^T)`
+  // // lower solver, see python lib celerite2/celerite2.py#L218
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> Z;
+  interfaces::solve_lower(tloc, c, U, V, yloc, Z);
   Eigen::Array<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> temp;
   temp = a.array();
   temp = temp.inverse() * Z.array();
   Z = temp.matrix();
-  forwardalgo::solve_upper(t,c,U,V,y,Z,F_out);
+  interfaces::solve_upper(tloc, c, U, V, yloc, Z);
   return(-0.5 * sum(log(a))-0.5 * y.transpose() * Z); 
-  //return(0.5);
   
 }
 
-}// namespace likelihood
 
 
-}//namespace celerite2
 //#endif
