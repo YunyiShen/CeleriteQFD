@@ -1174,7 +1174,9 @@ class SHOTerm : public Term<T, 2> {
     if (Q < 0.5) {
       ar.resize(2);
       cr.resize(2);
-      auto f = std::sqrt(std::max(1.0 - 4.0 * Q * Q, eps));
+      //auto f = stan::math::sqrt(stan::math::max(1.0 - 4.0 * Q * Q, eps));
+      // need to make stan happy by using stan's math rather than std::sqrt
+      auto f = stan::math::sqrt(1.0 - 4.0 * Q * Q >= eps ? 1.0 - 4.0 * Q * Q : eps);
       auto a = 0.5 * S0 * w0 * Q;
       auto c = 0.5 * w0 / Q;
       ar(0)  = a * (1 + 1 / f);
@@ -1186,7 +1188,8 @@ class SHOTerm : public Term<T, 2> {
       bc.resize(1);
       cc.resize(1);
       dc.resize(1);
-      auto f = std::sqrt(std::max(4.0 * Q * Q - 1, eps));
+      auto f = stan::math::sqrt((4.0 * Q * Q - 1 >= eps ? 4.0 * Q * Q - 1 : eps));
+      //auto f = stan::math::sqrt(4.0 * Q * Q - 1);
       auto a = S0 * w0 * Q;
       auto c = 0.5 * w0 / Q;
       ac(0)  = a;
@@ -1199,6 +1202,57 @@ class SHOTerm : public Term<T, 2> {
 };
 
 }
+
+
+template <typename T0__, typename T1__, typename T2__, typename T3__, typename T4__, typename T5__, typename T6__>
+typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__>::type>::type
+logLikSHO(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
+              const Eigen::Matrix<T1__, Eigen::Dynamic, 1>& y,
+              const T2__& S0,
+              const T3__& w0,
+              const T4__& Q,
+              const T5__& eps,
+              const Eigen::Matrix<T6__, Eigen::Dynamic, 1>& diag, std::ostream* pstream__){
+  typedef typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__>::type>::type local_scalar_t__;
+  typedef local_scalar_t__ fun_return_scalar_t__;
+
+  // local copy of data, for whatever reason it is necessary for the solver
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> tloc;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> yloc;
+  tloc = t;
+  yloc = y;
+
+  local_scalar_t__ epsloc;
+  epsloc = eps;
+    // declear a SHO term
+  terms::SHOTerm<local_scalar_t__> curr_SHOTerm(S0, w0, Q, epsloc);
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> c;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> a;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> U;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> V;
+
+  std::tie (c, a, U, V) = curr_SHOTerm.get_celerite_matrices(tloc,diag);// get those magic matrixes
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> Z;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> d_out;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> S_out;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> F_out;
+  Eigen::Index flag;
+  flag = interfaces::factor(tloc, c, a, U, V, a, V); // to reuse memory
+  // now a is d (the diagonal of the Chol decomposition), and V is the W
+  // s.t. `K = L*diag(d)*L^T`, `L = 1 + tril(U*W^T)`
+  // lower solver, see python lib celerite2/celerite2.py#L218
+  interfaces::solve_lower(tloc, c, U, V, yloc, Z);
+    
+  Eigen::Array<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> temp;
+  temp = a.array();
+  temp = temp.inverse() * Z.array();
+  Z = temp.matrix();
+  interfaces::solve_upper(tloc,c,U,V,yloc,Z,F_out);
+  return(-0.5 * sum(log(a))-0.5 * y.transpose() * Z); 
+  //return 0;
+}
+
+
 
 
 template <typename T0__, typename T1__, typename T2__, typename T3__, typename T4__, typename T5__, typename T6__, typename T7__, typename T8__>
@@ -1224,7 +1278,7 @@ logLikRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   yloc = y;
 
   // two component of SHO:
-  local_scalar_t__ S1, w1, Q1, S2, w2, Q2, amp, epslocal;
+  local_scalar_t__ S1, w1, Q1, S2, w2, Q2, amp, epsloc;
   amp =  sigma * sigma/ (1 + f);
   Q1 = 0.5 + Q0 + dQ;
   w1 = 4 * 3.1415926 * Q1 / (period * stan::math::sqrt(4 * Q1 * Q1 - 1));
@@ -1232,19 +1286,17 @@ logLikRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   Q2 = 0.5 + Q0;
   w2 = 8 * 3.1415926 * Q2 / (period * stan::math::sqrt(4 * Q2 * Q2 - 1));
   S2 = f * amp / (w2 * Q2);
+  epsloc = eps;
    
   //  // get the two terms and add them up
-  //SHOTerm<double> curr_SHOTerm1(1.0,1.0,1.0);
-  terms::RealTerm<local_scalar_t__> sth(amp,amp);
-  //Term<local_scalar_t__> rotation();
-  //rotation = sth + sth;
-  //SHOTerm<local_scalar_t__> curr_SHOTerm2(amp,amp,amp,amp);
-  // terms::SHOTerm<local_scalar_t__> curr_SHOTerm2(S2, w2, Q2, eps);
-  // terms::Term<local_scalar_t__> Rotation = curr_SHOTerm1 + curr_SHOTerm2;
-  //Term<double,2> SHO2;
-  //Term<double,2> SHO1;
-  terms::Term<local_scalar_t__,1> Rotation;
-  Rotation = sth;
+  terms::SHOTerm<local_scalar_t__> curr_SHOTerm1(S1, w1, Q1, epsloc);
+  //terms::SHOTerm<local_scalar_t__> curr_SHOTerm2(S2, w2, Q2, epsloc);
+  terms::SHOTerm<local_scalar_t__> Rotation(S2, w2, Q2, epsloc);
+  Rotation + curr_SHOTerm1;
+
+  //terms::Term<local_scalar_t__> Rotation = curr_SHOTerm1 + curr_SHOTerm2;
+  //Rotation = curr_SHOTerm1 + curr_SHOTerm2;
+  //Rotation = curr_SHOTerm1 + curr_SHOTerm2;
   //SHO1 = curr_SHOTerm1;
   //SHO2 = curr_SHOTerm1;
   //Rotation = SHO1+SHO2;
