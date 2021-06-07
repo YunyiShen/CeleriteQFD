@@ -1241,14 +1241,16 @@ logLikSHO(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   // now a is d (the diagonal of the Chol decomposition), and V is the W
   // s.t. `K = L*diag(d)*L^T`, `L = 1 + tril(U*W^T)`
   // lower solver, see python lib celerite2/celerite2.py#L218
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> Z;
   interfaces::solve_lower(tloc, c, U, V, yloc, Z);
-    
   Eigen::Array<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> temp;
   temp = a.array();
   temp = temp.inverse() * Z.array();
-  Z = temp.matrix();
-  interfaces::solve_upper(tloc, c, U, V, Z, Z);
-  return(-0.5 * sum(log(a))-0.5 * y.transpose() * Z); 
+  //Z = temp.matrix();
+  //interfaces::solve_upper(tloc, c, U, V, Z, Z);
+  //return(-0.5 * sum(log(a))-0.5 * y.transpose() * Z); 
+  temp = temp * Z.array();
+  return(-0.5 * sum(log(a)) - 0.5 * sum(temp));
   //return 0;
 }
 
@@ -1315,15 +1317,18 @@ logLikRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   //cout << V(0) << endl;
   // // now a is d (the diagonal of the Chol decomposition), and V is the W
   // // s.t. `K = L*diag(d)*L^T`, `L = 1 + tril(U*W^T)`
-  // // lower solver, see python lib celerite2/celerite2.py#L218
+  // // lower solver, see python lib celerite2/celerite2.py#L272
   Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> Z;
   interfaces::solve_lower(tloc, c, U, V, yloc, Z);
   Eigen::Array<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> temp;
   temp = a.array();
   temp = temp.inverse() * Z.array();
-  Z = temp.matrix();
-  interfaces::solve_upper(tloc, c, U, V, Z, Z);
-  return(-0.5 * sum(log(a))-0.5 * y.transpose() * Z); 
+  //Z = temp.matrix();
+  //interfaces::solve_upper(tloc, c, U, V, Z, Z);
+  //return(-0.5 * sum(log(a))-0.5 * y.transpose() * Z); 
+  temp = temp * Z.array();
+  return(-0.5 * sum(log(a)) - 0.5 * sum(temp));
+  //return(0.5);
   
 }
 
