@@ -1328,6 +1328,73 @@ logLikRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   
 }
 
+template <typename T0__, typename T1__, typename T2__, typename T3__, typename T4__, typename T5__, typename T6__, typename T7__, typename T8__>
+Eigen::Matrix<typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__, T7__, typename boost::math::tools::promote_args<T8__>::type>::type>::type, Eigen::Dynamic, 1>
+dotCholRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
+                    const Eigen::Matrix<T1__, Eigen::Dynamic, 1>& y,
+                    const T2__& sigma,
+                    const T3__& period,
+                    const T4__& Q0,
+                    const T5__& dQ,
+                    const T6__& f,
+                    const T7__& eps,
+                    const Eigen::Matrix<T8__, Eigen::Dynamic, 1>& diag, std::ostream* pstream__) {
+    typedef typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__, T7__, typename boost::math::tools::promote_args<T8__>::type>::type>::type  local_scalar_t__;
+    //typedef double local_scalar_t__;
+    typedef local_scalar_t__ fun_return_scalar_t__;
+
+  // local copy of data, for whatever reason it is necessary for the solver
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> tloc;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> yloc;
+  tloc = t;
+  yloc = y;
+
+  // two component of SHO:
+  local_scalar_t__ S1, w1, Q1, S2, w2, Q2, amp, epsloc;
+  amp =  sigma * sigma/ (1 + f);
+  Q1 = 0.5 + Q0 + dQ;
+  w1 = 4 * 3.1415926 * Q1 / (period * stan::math::sqrt(4 * Q1 * Q1 - 1));
+  S1 = amp / (w1 * Q1);
+  Q2 = 0.5 + Q0;
+  w2 = 8 * 3.1415926 * Q2 / (period * stan::math::sqrt(4 * Q2 * Q2 - 1));
+  S2 = f * amp / (w2 * Q2);
+  epsloc = eps;
+   
+  //  // get the two terms and add them up
+  terms::SHOTerm<local_scalar_t__> curr_SHOTerm1(S1, w1, Q1, epsloc);
+  //terms::SHOTerm<local_scalar_t__> curr_SHOTerm2(S2, w2, Q2, epsloc);
+  terms::SHOTerm<local_scalar_t__> Rotation(S2, w2, Q2, epsloc);
+  Rotation + curr_SHOTerm1;
+
+  //terms::Term<local_scalar_t__> Rotation = curr_SHOTerm1 + curr_SHOTerm2;
+  //Rotation = curr_SHOTerm1 + curr_SHOTerm2;
+  //Rotation = curr_SHOTerm1 + curr_SHOTerm2;
+  //SHO1 = curr_SHOTerm1;
+  //SHO2 = curr_SHOTerm1;
+  //Rotation = SHO1+SHO2;
+  //curr_SHOTerm1 = curr_SHOTerm1 + curr_SHOTerm1;
+
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> c;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> a;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> U;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> V;
+
+  std::tie (c, a, U, V) = Rotation.get_celerite_matrices(t,diag);// get those magic matrixes
+
+  Eigen::Index flag;
+
+  flag = interfaces::factor(t, c, a, U, V, a, V); // to reuse memory
+  //cout << V(0) << endl;
+  // // now a is d (the diagonal of the Chol decomposition), and V is the W
+  // // s.t. `K = L*diag(d)*L^T`, `L = 1 + tril(U*W^T)`
+  // // lower solver, see python lib celerite2/celerite2.py#L272
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> Z;
+  Z = yloc;
+  interfaces::matmul_lower(tloc, c, U, V, yloc, Z);
+  return(Z);
+  //return(0.5);
+  
+}
 
 
 //#endif
