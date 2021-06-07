@@ -1,5 +1,6 @@
 functions {
    real logLikRotation(vector t, vector y,real sigma, real period, real Q0, real dQ, real f,real eps, vector diag);
+   vector dotCholRotation(vector t, vector y,real sigma, real period, real Q0, real dQ, real f,real eps, vector diag);
    real asypareto(real x, real k, real eps){
        if(x>=0){
            return(pareto_lpdf(x+1 | 1.0, k));
@@ -33,7 +34,7 @@ data {
     // hyperpara, usually set to 0
     vector[N] diag;
     // a regularization term to make Paretol dist'n has full support and has gradient, should be small
-    real<lower = 0> eps_pare;
+    real<lower = 0> eps_neg;
 }
 
 transformed data {
@@ -42,7 +43,7 @@ transformed data {
 
 parameters{
     // trend model
-   vector[N] trend;
+   vector[N] eta;
    real<lower = sigma_prior[1], upper = sigma_prior[2]> lsigma;
    real<lower = period_prior[1], upper = period_prior[2]> lperiod;
    real<lower = Q0_prior[1], upper = Q0_prior[2]> lQ0;
@@ -71,6 +72,12 @@ model{
    vector[N] yd;// detrended curve
    real accu[2];
    real gamma[N,2];// joint likelihood of first t states
+   vector[N] trend;
+   //get trend
+   trend = dotCholRotation(t, eta, sigma, period, 
+                          Q0, dQ, f, eps, diag);
+    eta ~ normal(0,1);
+
    // prior settings 
       // No need of trend GP model parameters since coded in parameter section 
 
@@ -81,10 +88,6 @@ model{
     mu ~ normal(mu0, sigma2_usual/lambda);
     k ~ exponential(rate);
 
-   // likelihood 
-   // GP trend
-   target += logLikRotation(t, trend, sigma, period, 
-                          Q0, dQ, f, eps, diag);
 
    // vanilla HMM firing model, need to be changed later
    yd = y - trend - mu; // detrended light curve, also minus the usual mean
@@ -94,7 +97,7 @@ model{
     // usual state
     gamma[1,1] = normal_lpdf(yd[1]|0, sigma2_usual);
     // firing
-    gamma[1,2] = asypareto(yd[1], k,eps_pare);
+    gamma[1,2] = asypareto(yd[1], k,eps_neg);
     for(tt in 2:N){
         // at usual state
         //  came from usual state
@@ -107,9 +110,9 @@ model{
         // at firing state
         //  came from usual state
         accu[1] = gamma[tt-1,1] + log(theta[1,2]) + 
-                  asypareto(yd[tt], k, eps_pare);
+                  asypareto(yd[tt], k, eps_neg);
         accu[2] = gamma[tt-1,2] + log(theta[2,2]) + 
-                  asypareto(yd[tt], k, eps_pare); 
+                  asypareto(yd[tt], k, eps_neg); 
         gamma[tt,2] = log_sum_exp(accu);            
     }
    target += log_sum_exp(gamma[N]);
@@ -119,6 +122,7 @@ model{
 generated quantities {
     int <lower = 1, upper = 2>state[N];
     vector[N] yd;// detrended curve
+    vector[N] trend; 
     real log_p_state;
     
     {
@@ -126,11 +130,13 @@ generated quantities {
         real best_logp[N, 2];
         real best_total_logp;
         real logp;
+        trend = dotCholRotation(t, eta, sigma, period, 
+                          Q0, dQ, f, eps, diag);
         yd = y - mu - trend ;
         // usual
         best_logp[1,1] = normal_lpdf(yd[1]|0, sigma2_usual);
         // firing
-        best_logp[1,2] = asypareto(yd[1], k, eps_pare);
+        best_logp[1,2] = asypareto(yd[1], k, eps_neg);
         
         for(tt in 2:N){
             best_logp[tt, 1] = negative_infinity();
@@ -150,13 +156,13 @@ generated quantities {
             best_logp[tt, 2] = negative_infinity();
 
             logp = best_logp[tt-1, 1] + log(theta[1,2]) + 
-                    asypareto(yd[tt] , k, eps_pare);
+                    asypareto(yd[tt] , k, eps_neg);
             if(logp>best_logp[tt,2]){
                 back_ptr[tt,2] = 1;
                 best_logp[tt,2] = logp;
             }
             logp = best_logp[tt-1,2] + log(theta[2,2]) + 
-                    asypareto(yd[tt], k, eps_pare);
+                    asypareto(yd[tt], k, eps_neg);
             if(logp>best_logp[tt,2]){
                 back_ptr[tt,2] = 2;
                 best_logp[tt,2] = logp;

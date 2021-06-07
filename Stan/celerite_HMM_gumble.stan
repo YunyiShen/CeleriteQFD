@@ -1,15 +1,6 @@
 functions {
    real logLikRotation(vector t, vector y,real sigma, real period, real Q0, real dQ, real f,real eps, vector diag);
    vector dotCholRotation(vector t, vector y,real sigma, real period, real Q0, real dQ, real f,real eps, vector diag);
-   real asyexp(real x, real k, real eps){
-       if(x>=0){
-           return(log(k/(eps + 1/eps))-eps * k * x);
-       }
-       else{
-            //return(exponential_lpdf(-x | 1/(eps)));
-            return(log(k/(eps + 1/eps)) + (k/eps) * x);
-       }
-   }
 }
 
 data {
@@ -33,11 +24,11 @@ data {
     real<lower = 0> rate;// shape for the exponential of the power law
     
     vector[N] diag;// hyperpara, usually set to 0
-    real<lower = 0> eps_neg; // panelization of negative, should be small
 }
 
 transformed data {
   real eps = 1e-9;
+  real eps_pare = 2e-3;
 }
 
 parameters{
@@ -68,18 +59,16 @@ transformed parameters{
 }
 
 model{
-    vector[N] trend;
    vector[N] yd;// detrended curve
    real accu[2];
    real gamma[N,2];// joint likelihood of first t states
-    // get the latent GP with Chol parameterization:
-    trend = dotCholRotation(t, eta, sigma, period, 
+   // get trend
+   trend = dotCholRotation(t, eta, sigma, period, 
                           Q0, dQ, f, eps, diag);
-    eta ~ normal(0,1);
-
+   eta ~ normal(0,1);
    // prior settings 
       // No need of trend GP model parameters since coded in parameter section 
-    
+
    // Firing HMM model parameters
     sigma2_usual ~ inv_gamma(noise_prior[1], noise_prior[2]);
     theta[1] ~ dirichlet(alpha);
@@ -87,6 +76,7 @@ model{
     mu ~ normal(mu0, sigma2_usual/lambda);
     k ~ exponential(rate);
 
+   // likelihood 
 
    // vanilla HMM firing model, need to be changed later
    yd = y - trend - mu; // detrended light curve, also minus the usual mean
@@ -96,7 +86,7 @@ model{
     // usual state
     gamma[1,1] = normal_lpdf(yd[1]|0, sigma2_usual);
     // firing
-    gamma[1,2] = asyexp(yd[1] , k, eps_neg);
+    gamma[1,2] = gumbel_lpdf(yd[1] |0 , k);
     for(tt in 2:N){
         // at usual state
         //  came from usual state
@@ -109,9 +99,9 @@ model{
         // at firing state
         //  came from usual state
         accu[1] = gamma[tt-1,1] + log(theta[1,2]) + 
-                  asyexp(yd[tt], k, eps_neg);
+                  gumbel_lpdf(yd[tt]|0 , k);
         accu[2] = gamma[tt-1,2] + log(theta[2,2]) + 
-                  asyexp(yd[tt], k, eps_neg); 
+                  gumbel_lpdf(yd[tt]|0 , k); 
         gamma[tt,2] = log_sum_exp(accu);            
     }
    target += log_sum_exp(gamma[N]);
@@ -135,7 +125,7 @@ generated quantities {
         // usual
         best_logp[1,1] = normal_lpdf(yd[1]|0, sigma2_usual);
         // firing
-        best_logp[1,2] = asyexp(yd[1], k, eps_neg);
+        best_logp[1,2] = gumbel_lpdf(yd[1]|0 , k);
         
         for(tt in 2:N){
             best_logp[tt, 1] = negative_infinity();
@@ -155,13 +145,13 @@ generated quantities {
             best_logp[tt, 2] = negative_infinity();
 
             logp = best_logp[tt-1, 1] + log(theta[1,2]) + 
-                    asyexp(yd[tt], k, eps_neg);
+                    gumbel_lpdf(yd[tt]|0 , k);
             if(logp>best_logp[tt,2]){
                 back_ptr[tt,2] = 1;
                 best_logp[tt,2] = logp;
             }
             logp = best_logp[tt-1,2] + log(theta[2,2]) + 
-                    asyexp(yd[tt], k, eps_neg);
+                    gumbel_lpdf(yd[tt]|0 , k);
             if(logp>best_logp[tt,2]){
                 back_ptr[tt,2] = 2;
                 best_logp[tt,2] = logp;

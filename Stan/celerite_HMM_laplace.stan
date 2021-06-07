@@ -1,5 +1,8 @@
 functions {
    real logLikRotation(vector t, vector y,real sigma, real period, real Q0, real dQ, real f,real eps, vector diag);
+   vector dotCholRotation(vector t, vector y,real sigma, real period, real Q0, real dQ, real f,real eps, vector diag);
+
+   
 }
 
 data {
@@ -32,7 +35,7 @@ transformed data {
 
 parameters{
     // trend model
-   vector[N] trend;
+   vector[N] eta;
    real<lower = sigma_prior[1], upper = sigma_prior[2]> lsigma;
    real<lower = period_prior[1], upper = period_prior[2]> lperiod;
    real<lower = Q0_prior[1], upper = Q0_prior[2]> lQ0;
@@ -58,9 +61,14 @@ transformed parameters{
 }
 
 model{
+    vector[N] trend;
    vector[N] yd;// detrended curve
    real accu[2];
    real gamma[N,2];// joint likelihood of first t states
+   // get the trend
+   trend = dotCholRotation(t, eta, sigma, period, 
+                          Q0, dQ, f, eps, diag);
+   eta ~ normal(0,1);
    // prior settings 
       // No need of trend GP model parameters since coded in parameter section 
 
@@ -72,9 +80,6 @@ model{
     k ~ exponential(rate);
 
    // likelihood 
-   // GP trend
-   target += logLikRotation(t, trend, sigma, period, 
-                          Q0, dQ, f, eps, diag);
 
    // vanilla HMM firing model, need to be changed later
    yd = y - trend - mu; // detrended light curve, also minus the usual mean
@@ -108,14 +113,18 @@ model{
 // Viterbi
 generated quantities {
     int <lower = 1, upper = 2>state[N];
+    vector[N] trend;
     vector[N] yd;// detrended curve
     real log_p_state;
     
     {
+        
         int back_ptr[N, 2];
         real best_logp[N, 2];
         real best_total_logp;
         real logp;
+        trend = dotCholRotation(t, eta, sigma, period, 
+                          Q0, dQ, f, eps, diag);
         yd = y - mu - trend ;
         // usual
         best_logp[1,1] = normal_lpdf(yd[1]|0, sigma2_usual);

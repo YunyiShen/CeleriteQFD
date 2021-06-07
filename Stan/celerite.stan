@@ -1,6 +1,6 @@
 functions {
    //real logLikSHO(vector t, vector y,real S0, real w0, real Q, real eps, vector diag);
-
+   vector dotCholRotation(vector t, vector y,real sigma, real period, real Q0, real dQ, real f,real eps, vector diag);
    real logLikRotation(vector t, vector y,real sigma, real period, real Q0, real dQ, real f,real eps, vector diag);
 }
 
@@ -24,7 +24,7 @@ transformed data {
 }
 
 parameters{
-   vector[N] trend;
+   vector[N] eta;
    real<lower = sigma_prior[1], upper = sigma_prior[2]> lsigma;
    real<lower = period_prior[1], upper = period_prior[2]> lperiod;
    real<lower = Q0_prior[1], upper = Q0_prior[2]> lQ0;
@@ -45,8 +45,20 @@ transformed parameters{
 }
 
 model{
+   vector[N] trend;
+   trend = dotCholRotation(t, eta, sigma, period, 
+                          Q0, dQ, f, eps, diag);
    err ~ inv_gamma(err_prior[1], err_prior[2]);
    y ~ normal(trend, err);
-   target += logLikRotation(t, trend, sigma, period, 
+   eta ~ normal(0,1);
+                  
+   //target += logLikRotation(t, y, sigma, period, 
+   //                     Q0, dQ, f, eps, diag + err);
+
+}
+
+generated quantities {
+   vector[N] trend;
+   trend = dotCholRotation(t, eta, sigma, period, 
                           Q0, dQ, f, eps, diag);
 }
