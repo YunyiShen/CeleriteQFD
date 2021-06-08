@@ -52,6 +52,8 @@ modelpowerlaw <- stan_model(file = './Stan/celerite_HMM_powerlaw.stan',
             includes = paste0('\n#include "', 
                              file.path(getwd(), 
                              'celerite2/celerite2.hpp'), '"\n'))
+fitpowerlaw <- sampling(modelpowerlaw, data = star_data, iter = 2000,control = list(max_treedepth=15))
+
 
 
 modelexp <- stan_model(file = './Stan/celerite_HMM_exp.stan', 
@@ -61,9 +63,9 @@ modelexp <- stan_model(file = './Stan/celerite_HMM_exp.stan',
                              file.path(getwd(), 
                              'celerite2/celerite2.hpp'), '"\n'))
 
-fitexp <- sampling(modelexp, data = star_data, iter = 2000,control = list(max_treedepth=10))
+fitexp <- sampling(modelexp, data = star_data, iter = 2000,control = list(max_treedepth=15))
 summ_fitexp <- summary(fitexp)
-plot(summ_fitexp[[1]][1:101 + 217,1])
+plot(summ_fitexp[[1]][1:101 + 319,1])
 plot(summ_fitexp[[1]][1:101 + 117,1], ylim = c(1,2))
 lines(firing_or_not)
 
