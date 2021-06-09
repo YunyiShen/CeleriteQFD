@@ -23,7 +23,7 @@ star_data <- list(N=N, t = tt, y = rawdata[,2],
                      diag = rep(0,N),
                      eps_neg = 1e-2)
 
-modellaplace <- stan_model(file = './Stan/celerite_HMM_laplace.stan', 
+modellaplace <- stan_model(file = './Stan/Prototypes/CeleriteHMM/celerite_HMM_laplace.stan', 
             model_name = "celeritHMMlaplace", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 

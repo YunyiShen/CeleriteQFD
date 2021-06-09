@@ -13,6 +13,7 @@ n_fire <- 10
 firing <- sample( N, n_fire)
 y[firing] <- f[firing] + rexp(n_fire, 0.05)
 plot(t,y)
+points(t[firing], y[firing], col = "red")
 
 firing_or_not <- y/y
 firing_or_not[firing] <- 2
@@ -31,7 +32,7 @@ star_data <- list(N=N, t = t, y = y,
                      diag = 0*t,
                      eps_neg = 1e-2)
 
-modellaplace <- stan_model(file = './Stan/celerite_HMM_laplace.stan', 
+modellaplace <- stan_model(file = './Stan/Prototypes/CeleriteHMM/celerite_HMM_laplace.stan', 
             model_name = "celeritHMMlaplace", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
@@ -43,10 +44,18 @@ fitlaplace <- sampling(modellaplace, data = star_data,control = list(adapt_delta
 summ_fitlaplace <- summary(fitlaplace)
 plot(summ_fitlaplace[[1]][1:101+217,1])
 plot(summ_fitlaplace[[1]][1:101+117,1], ylim = c(1,2))
+state_estlaplace <- summ_fitlaplace[[1]][1:101+117,1]
 lines(firing_or_not)
 
+# plot
+par(mfrow = c(1,2))
+plot(t,y, main = "ground truth")
+points(t[firing], y[firing], col = "red")
+plot(t,y, main = "celeriteHMM-Laplace firing")
+points(t[state_estlaplace>=1.5], y[state_estlaplace>=1.5], col = "red")
 
-modelpowerlaw <- stan_model(file = './Stan/celerite_HMM_powerlaw.stan', 
+
+modelpowerlaw <- stan_model(file = './Stan/Prototypes/CeleriteHMM/celerite_HMM_powerlaw.stan', 
             model_name = "celeritHMMpowerlaw", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
@@ -56,7 +65,7 @@ fitpowerlaw <- sampling(modelpowerlaw, data = star_data, iter = 2000,control = l
 
 
 
-modelexp <- stan_model(file = './Stan/celerite_HMM_exp.stan', 
+modelexp <- stan_model(file = './Stan/Prototypes/CeleriteHMM/celerite_HMM_exp.stan', 
             model_name = "celeritHMMexp", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
@@ -70,7 +79,7 @@ plot(summ_fitexp[[1]][1:101 + 117,1], ylim = c(1,2))
 lines(firing_or_not)
 
 
-modelgumble <- stan_model(file = './Stan/celerite_HMM_gumble.stan', 
+modelgumble <- stan_model(file = './Stan/Prototypes/CeleriteHMM/celerite_HMM_gumble.stan', 
             model_name = "celeritHMMgumble", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
