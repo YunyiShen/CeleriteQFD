@@ -1345,9 +1345,9 @@ dotCholRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
 
   // local copy of data, for whatever reason it is necessary for the solver
   Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> tloc;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> yloc;
+  //Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> yloc;
   tloc = t;
-  yloc = y;
+  //yloc = y;
 
   // two component of SHO:
   local_scalar_t__ S1, w1, Q1, S2, w2, Q2, amp, epsloc;
@@ -1389,8 +1389,8 @@ dotCholRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   // // s.t. `K = L*diag(d)*L^T`, `L = 1 + tril(U*W^T)`
   // // lower solver, see python lib celerite2/celerite2.py#L272
   Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> Z;
-  Z = yloc;
-  interfaces::matmul_lower(tloc, c, U, V, yloc, Z);
+  Z = y;
+  interfaces::matmul_lower(tloc, c, U, V, y, Z);
   return(Z);
   //return(0.5);
   
