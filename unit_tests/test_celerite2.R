@@ -18,7 +18,7 @@ celerite_data <- list(N=N, t = t, y = y,
                      err_prior = c(0.01,0.01),
                      diag = 0*t)
 
-modelcelerite <- stan_model(file = './Stan/celerite.stan', 
+modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite.stan', 
             model_name = "celerit", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
@@ -26,7 +26,7 @@ modelcelerite <- stan_model(file = './Stan/celerite.stan',
                              'celerite2/celerite2.hpp'), '"\n'))
 fit2 <- optimizing(modelcelerite, data = celerite_data)
 
-fit <- sampling(modelcelerite, data = celerite_data,control = list(adapt_delta = 0.99,max_treedepth=15), iter = 2000)
+fit <- sampling(modelcelerite, data = celerite_data,control = list(adapt_delta = 0.99,max_treedepth=10), iter = 2000)
 summ_fit <- summary(fit)
-plot(summ_fit[[1]][1:101,1])
-plot(y-summ_fit[[1]][1:101,1])
+plot(summ_fit[[1]][1:501+511,1])
+plot(y-summ_fit[[1]][1:501+511,1])
