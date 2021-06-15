@@ -1,6 +1,7 @@
 library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
+source("./R/misc.R") # some helper
 
 rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[16400:17400,c("TIME","PDCSAP_FLUX")]
 rawdata <- na.omit(rawdata)
@@ -58,3 +59,19 @@ flare3s <- which(residual >= (mean(residual) + 3 * sd(residual)))
 points(tt[flare3s], residual[flare3s], col = "red")
 
 save.image("../res164-174-cQFDexN.RData")
+load("../res164-174-cQFDexN.RData")
+
+QFD_samples <- as.data.frame(fitQFD)
+Viterbi_raw <- QFD_samples[,1:(N-1) + (N + 22)]
+
+Viterbi_max <- apply(Viterbi_raw,2,majority)
+
+pdf("./Res/CeleriteQFD/131799991_16400-17400/det.pdf", width = 10, height = 6)
+plot(rawdata)
+lines(rawdata[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
+points(rawdata[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
+points(rawdata[which(Viterbi_max==3)+1,], col = "blue",lwd=3.0)
+legend("topleft", legend = c("Firing","Decay","Trend"), 
+                lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
+                cex = 1.5)
+dev.off()
