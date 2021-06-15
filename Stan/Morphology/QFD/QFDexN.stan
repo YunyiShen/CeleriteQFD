@@ -128,4 +128,103 @@ model{
    target += log_sum_exp(gamma[N-1]);
 }
 
+generated quantities {
+    int<lower = 1, upper = 3> viterbi[N-1]; 
+    real log_p_state;
+    
+    {   
+        int back_ptr[N-1, 3];
+        real best_logp[N-1, 3];
+        real best_total_logp;
+        real logp;
+        vector[N] yd;
+        yd = y-mu_quiet;
+
+        // quiet
+        best_logp[1,1] = normal_lpdf(yd[2]|0, sqrt(sigma2_noise));
+        // firing
+        best_logp[1,2] = exp_mod_normal_lpdf(yd[2] | yd[1] , sqrt(sigma2_noise) , rate_firing );
+        // decay
+        best_logp[1,3] = normal_lpdf(yd[2] | rate_decay * yd[1], sqrt(sigma2_noise)); 
+
+        for(tt in 2:(N-1)){
+            // at quiet
+            best_logp[tt, 1] = negative_infinity();
+            //  from quiet
+            logp = best_logp[tt-1, 1] + log(theta_quiet[1]) + 
+                    normal_lpdf(yd[tt+1]|0, sqrt(sigma2_noise));
+            if(logp>best_logp[tt,1]){
+                back_ptr[tt,1] = 1;
+                best_logp[tt,1] = logp;
+            }
+            //  cannot be from firing
+            //  from decay
+            logp = best_logp[tt-1,3] + log(theta_decay[1]) + 
+                    normal_lpdf(yd[tt+1]|0, sqrt(sigma2_noise));
+            if(logp>best_logp[tt,1]){
+                back_ptr[tt,1] = 3;
+                best_logp[tt,1] = logp;
+            }
+
+            // firing state
+            best_logp[tt, 2] = negative_infinity();
+            // from quiet
+            logp = best_logp[tt-1, 1] + log(theta_quiet[2]) + 
+                    exp_mod_normal_lpdf(yd[tt+1] | yd[tt], sqrt(sigma2_noise) , rate_firing );
+            if(logp>best_logp[tt,2]){
+                back_ptr[tt,2] = 1;
+                best_logp[tt,2] = logp;
+            }
+            // from firing
+            logp = best_logp[tt-1, 2] + log(theta_firing[1]) + 
+                    exp_mod_normal_lpdf(yd[tt+1] | yd[tt], sqrt(sigma2_noise) , rate_firing );
+
+            if(logp>best_logp[tt,2]){
+                back_ptr[tt,2] = 2;
+                best_logp[tt,2] = logp;
+            }
+            // from decay
+            logp = best_logp[tt-1, 3] + log(theta_decay[2]) + 
+                    exp_mod_normal_lpdf(yd[tt+1] | yd[tt], sqrt(sigma2_noise) , rate_firing );
+
+            if(logp>best_logp[tt,2]){
+                back_ptr[tt,2] = 3;
+                best_logp[tt,2] = logp;
+            }
+
+            // at decay
+            best_logp[tt, 3] = negative_infinity();
+            // cannot from quiet
+            // from firing
+            logp = best_logp[tt-1, 2] + log(theta_firing[2]) + 
+                    normal_lpdf(yd[tt+1] | rate_decay * yd[tt] , sqrt(sigma2_noise));
+                    
+            if(logp>best_logp[tt,3]){
+                back_ptr[tt,3] = 2;
+                best_logp[tt,3] = logp;
+            }
+
+            // from decay
+            logp = best_logp[tt-1, 3] + log(theta_decay[3]) + 
+                    normal_lpdf(yd[tt+1] | rate_decay * yd[tt] , sqrt(sigma2_noise));
+            if(logp>best_logp[tt,3]){
+                back_ptr[tt,3] = 3;
+                best_logp[tt,3] = logp;
+            }
+
+            
+        }
+        log_p_state = max(best_logp[N-1]);
+        for(i in 1:3){
+            if(best_logp[N-1, i]==log_p_state){
+                viterbi[N-1] = i;
+            }
+        }
+
+        for(tt in 2:(N-1)){
+            viterbi[N-tt] = back_ptr[N-tt+1, viterbi[N-tt+1]];
+        }
+    }
+
+}
 
