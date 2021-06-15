@@ -66,9 +66,9 @@ QFD_data <- list(N=N, t = tt,
                 period_prior = c(-3,3),
                 #period_prior = c(0,3),
                 f_prior = c(1e-6,1-1e-6),
-                alpha_quiet = c(10,1), # we ask flares to be relativly rare
+                alpha_quiet = c(1,1), # we ask flares to be relativly rare
                 alpha_firing = c(1,1),
-                alpha_decay = c(1,.1,1),
+                alpha_decay = c(1,1,1),
                 mu0_quiet = 0,
                 lambda_quiet = .01,
                 gamma_noise = c(0.01,0.01),
