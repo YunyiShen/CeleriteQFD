@@ -1,12 +1,12 @@
 library(rstan)
-options(mc.cores = parallel::detectCores()/2)
+options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = T)
 
 set.seed(42)
 t <- seq(0,50,.5)
-f <- sin(4*t/(2*pi))
+f <- 5*sin(4*t/(2*pi))
 #plot(t,f)
-y <- 5*f + rnorm(length(t),0,1)
+y <- f + rnorm(length(t),0,1)
 #y <- rnorm(length(t),0,1)
 N <- length(t)
 n_fire <- 10
@@ -17,6 +17,7 @@ points(t[firing], y[firing], col = "red")
 
 firing_or_not <- y/y
 firing_or_not[firing] <- 2
+
 
 star_data <- list(N=N, t = t, y = y,
                      sigma_prior = c(-2,2),
@@ -30,7 +31,8 @@ star_data <- list(N=N, t = t, y = y,
                      noise_prior = c(0.01,0.01),
                      rate = 0.0001, 
                      diag = 0*t,
-                     eps_neg = 1e-2)
+                     eps_neg = 1e-2,
+                     err_prior = c(0.01,0.01))
 
 modellaplace <- stan_model(file = './Stan/Prototypes/CeleriteHMM/celerite_HMM_laplace.stan', 
             model_name = "celeritHMMlaplace", 
@@ -40,12 +42,18 @@ modellaplace <- stan_model(file = './Stan/Prototypes/CeleriteHMM/celerite_HMM_la
                              'celerite2/celerite2.hpp'), '"\n'))
 
 fitlaplace <- sampling(modellaplace, data = star_data,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 2000)
-#fit2laplace <- optimizing(modellaplace, data = star_data, verbose = T, iter = 10000)
+fit2laplace <- vb(modellaplace, data = star_data,tol_rel_obj = 0.001)
 summ_fitlaplace <- summary(fitlaplace)
-plot(summ_fitlaplace[[1]][1:101+217,1])
+plot(summ_fitlaplace[[1]][1:101+218,1],ylim = c(-5.5,5.5), type = "l", col = "blue")
+lines(f)
+points(y, col = "red")
+
+
 plot(summ_fitlaplace[[1]][1:101+117,1], ylim = c(1,2))
 state_estlaplace <- summ_fitlaplace[[1]][1:101+117,1]
 lines(firing_or_not)
+
+boxplot(summ_fitlaplace[[1]][1:101+317,1], outline = F)
 
 # plot
 par(mfrow = c(1,2))
@@ -91,3 +99,18 @@ summ_fitgumble <- summary(fitgumble)
 plot(summ_fitgumble[[1]][1:101,1])
 plot(summ_fitgumble[[1]][1:101+117,1], ylim = c(1,2))
 lines(firing_or_not)
+
+
+modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite.stan', 
+            model_name = "celeritHMMgumble", 
+            allow_undefined = TRUE,
+            includes = paste0('\n#include "', 
+                             file.path(getwd(), 
+                             'celerite2/celerite2.hpp'), '"\n'))
+
+fitcelerite<- sampling(modelcelerite, data = star_data,control = list(adapt_delta = 0.99),iter = 4000)
+summ_fitcelerite <- summary(fitcelerite)
+plot(y, col = "red")
+points(summ_fitcelerite[[1]][112:212,1])
+lines(f)
+

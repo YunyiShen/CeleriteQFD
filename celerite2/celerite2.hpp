@@ -1226,8 +1226,8 @@ logLikSHO(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   epsloc = eps;
     // declear a SHO term
   terms::SHOTerm<local_scalar_t__> curr_SHOTerm(S0, w0, Q, epsloc);
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> c;
-  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> a;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> c;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> a;
   Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> U;
   Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> V;
 
@@ -1328,6 +1328,7 @@ logLikRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   
 }
 
+// TODO: Check Chol
 template <typename T0__, typename T1__, typename T2__, typename T3__, typename T4__, typename T5__, typename T6__, typename T7__, typename T8__>
 Eigen::Matrix<typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__, T7__, typename boost::math::tools::promote_args<T8__>::type>::type>::type, Eigen::Dynamic, 1>
 dotCholRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
@@ -1390,11 +1391,66 @@ dotCholRotation(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
   // // lower solver, see python lib celerite2/celerite2.py#L272
   Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> Z;
   Z = y;
-  interfaces::matmul_lower(tloc, c, U, V, y, Z);
+  Eigen::Array<local_scalar_t__, Eigen::Dynamic, 1> temp;
+  temp = a.array();
+  temp = sqrt(temp);
+  temp = temp * y.array();
+  Z = temp.matrix();
+  interfaces::matmul_lower(tloc, c, U, V, Z, Z);
   return(Z);
   //return(0.5);
   
 }
+
+
+
+template <typename T0__, typename T1__, typename T2__, typename T3__, typename T4__, typename T5__, typename T6__>
+Eigen::Matrix<typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__>::type>::type,Eigen::Dynamic, 1>
+dotCholSHO(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
+              const Eigen::Matrix<T1__, Eigen::Dynamic, 1>& y,
+              const T2__& S0,
+              const T3__& w0,
+              const T4__& Q,
+              const T5__& eps,
+              const Eigen::Matrix<T6__, Eigen::Dynamic, 1>& diag, std::ostream* pstream__){
+  typedef typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__>::type>::type local_scalar_t__;
+  typedef local_scalar_t__ fun_return_scalar_t__;
+
+  // local copy of data, for whatever reason it is necessary for the solver
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> tloc;
+  //Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> yloc;
+  tloc = t;
+  //yloc = y;
+
+  local_scalar_t__ epsloc;
+  epsloc = eps;
+    // declear a SHO term
+  terms::SHOTerm<local_scalar_t__> curr_SHOTerm(S0, w0, Q, epsloc);
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> c;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> a;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> U;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> V;
+
+  std::tie (c, a, U, V) = curr_SHOTerm.get_celerite_matrices(tloc,diag);// get those magic matrixes
+  Eigen::Index flag;
+  flag = interfaces::factor(tloc, c, a, U, V, a, V); // to reuse memory
+  //cout << V(0) << endl;
+  // // now a is d (the diagonal of the Chol decomposition), and V is the W
+  // // s.t. `K = L*diag(d)*L^T`, `L = 1 + tril(U*W^T)`
+  // // lower solver, see python lib celerite2/celerite2.py#L272
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> Z;
+  Z = y;
+  Eigen::Array<local_scalar_t__, Eigen::Dynamic, 1> temp;
+  temp = a.array();
+  temp = sqrt(temp);
+  temp = temp * y.array();
+  Z = temp.matrix();
+  interfaces::matmul_lower(tloc, c, U, V, Z, Z);
+  return(Z);
+}
+
+
+
 
 
 //#endif
