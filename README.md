@@ -14,4 +14,4 @@ And several of them are experimental
 
 - [CeleriteQFD](https://github.com/YunyiShen/AstroHMMs/tree/master/Stan/Morphology/QFD), this model relies more on the morphology, similar to CeleriteHMM but we have three states, anmely **Q**uiet-**F**iring-**D**ecay, and for **F** and **D** state, we model the data generating process as a AR(1) model without slope (for **F**) or intercept (for **D**), this impose a linear increase and an exponential derease of the brightness. 
 - [QFDexN](https://github.com/YunyiShen/AstroHMMs/tree/master/Stan/Morphology/QFD), similar to QFD, we have Firing process follow a exponentially modified normal random walk of the previous step, this works well as a noise model.
-- [CeleriteQFDexN](https://github.com/YunyiShen/AstroHMMs/tree/master/Stan/Morphology/QFD), the celerite combined version of QFDexN, currently not working very well as of June 2021.
+- [CeleriteQFDexN](https://github.com/YunyiShen/AstroHMMs/tree/master/Stan/Morphology/QFD), the celerite combined version of QFDexN, tricky to tune the celerite part.

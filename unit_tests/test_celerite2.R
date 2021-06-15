@@ -10,10 +10,10 @@ y <- f + rnorm(length(tt),0,1)
 plot(tt,y)
 lines(tt,f)
 celerite_data <- list(N=N, t = tt, y = y,
-                     sigma_prior = c(-5,5),
-                     period_prior = c(-5,5),
-                     Q0_prior = c(-5,5),
-                     dQ_prior = c(-5,5),
+                     sigma_prior = c(-2,2),
+                     period_prior = c(-2,2),
+                     Q0_prior = c(-2,2),
+                     dQ_prior = c(-2,2),
                      f_prior = c(1e-6,1-1e-6),
                      err_prior = c(0.01,0.01),
                      diag = 1e-6+0*tt)
@@ -24,7 +24,7 @@ modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite.stan',
             includes = paste0('\n#include "', 
                              file.path(getwd(), 
                              'celerite2/celerite2.hpp'), '"\n'))
-fit2 <- vb(modelcelerite, data = celerite_data,tol_rel_obj=0.0005)
+fit2 <- vb(modelcelerite, data = celerite_data,tol_rel_obj=0.001)
 summ_celerite2 <- summary(fit2)
 
 fitopt <- optimizing(modelcelerite, data = celerite_data)
