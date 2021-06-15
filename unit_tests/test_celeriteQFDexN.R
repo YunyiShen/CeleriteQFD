@@ -61,12 +61,12 @@ QFD_data <- list(N=N, t = tt,
                 y = simu_signal,
                 sigma_prior = c(-2,5),
                 #Q0_prior = c(2,4),
-                Q0_prior = c(0,4),# this is key, we need to set quality to be larger than 1
-                dQ_prior = c(0,4),
+                Q0_prior = c(-2,4),# this is key, we need to set quality to be not too small
+                dQ_prior = c(-2,4),
                 period_prior = c(-3,3),
                 #period_prior = c(0,3),
                 f_prior = c(1e-6,1-1e-6),
-                alpha_quiet = c(10,1),
+                alpha_quiet = c(10,1), # we ask flares to be relativly rare
                 alpha_firing = c(1,1),
                 alpha_decay = c(1,.1,1),
                 mu0_quiet = 0,
