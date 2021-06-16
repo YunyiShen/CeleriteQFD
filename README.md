@@ -10,8 +10,9 @@ In current stage, several methods for simultaneous detrending and flare detectio
 - [Celerite](https://github.com/YunyiShen/AstroHMMs/tree/master/Stan/Prototypes/Celerite): adopted from Python package [exoplanet-celerite2](https://github.com/exoplanet-dev/celerite2), one could use this to detrend the data and use 3-sigma rule
 - [CeleriteHMM](https://github.com/YunyiShen/AstroHMMs/tree/master/Stan/Prototypes/CeleriteHMM): this type of models combined Celerite2 and HMMs. We used the Celerite as trend model. For flare, we have two states namely a quiet state and a flare state while quiet state the data follow normal with mean of the Celerite trend and flare state follow the trend added by some random variable from different distribution, e.g. Laplace and power-law.
 
-And several of them are experimental 
+- [QFDexN](https://github.com/YunyiShen/AstroHMMs/tree/master/Stan/Morphology/QFD), this model relies more on the morphology, similar to CeleriteHMM but we have three states, namely **Q**uiet-**F**iring-**D**ecay, and for **F** and **D** state, we model the data generating process as a AR(1) model with an exponential modified normal (exN) random walk for **F**iring and an exponential decay for **D**ecay, this works well as pure firing model.
+- [CeleriteQFDexN](https://github.com/YunyiShen/AstroHMMs/tree/master/Stan/Morphology/QFD), the celerite combined version of QFDexN, sometimes tricky to tune the celerite part.
 
-- [CeleriteQFD](https://github.com/YunyiShen/AstroHMMs/tree/master/Stan/Morphology/QFD), this model relies more on the morphology, similar to CeleriteHMM but we have three states, anmely **Q**uiet-**F**iring-**D**ecay, and for **F** and **D** state, we model the data generating process as a AR(1) model without slope (for **F**) or intercept (for **D**), this impose a linear increase and an exponential derease of the brightness. 
-- [QFDexN](https://github.com/YunyiShen/AstroHMMs/tree/master/Stan/Morphology/QFD), similar to QFD, we have Firing process follow a exponentially modified normal random walk of the previous step, this works well as a noise model.
-- [CeleriteQFDexN](https://github.com/YunyiShen/AstroHMMs/tree/master/Stan/Morphology/QFD), the celerite combined version of QFDexN, tricky to tune the celerite part.
+An example run from TIC 131799991
+
+![](https://github.com/YunyiShen/AstroHMMs/raw/master/Res/CeleriteQFD/131799991_16400-17400/det.png)
