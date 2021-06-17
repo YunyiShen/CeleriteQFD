@@ -3,7 +3,9 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 source("./R/misc.R") # some helper
 
+# run QFD
 rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[16400:17400,c("TIME","PDCSAP_FLUX")]
+# handling missing data is currently not implemented, but only little are missing so I will just omit it for now
 rawdata <- na.omit(rawdata)
 rawdata[,2] <- rawdata[,2] - mean(rawdata[,2])
 N <- nrow(rawdata)
@@ -58,9 +60,10 @@ plot(tt, residual)
 flare3s <- which(residual >= (mean(residual) + 3 * sd(residual)))
 points(tt[flare3s], residual[flare3s], col = "red")
 
-save.image("../res164-174-cQFDexN.RData")
+#save.image("../res164-174-cQFDexN.RData")
 load("../res164-174-cQFDexN.RData")
 
+## visualize
 QFD_samples <- as.data.frame(fitQFD)
 Viterbi_raw <- QFD_samples[,1:(N-1) + (N + 22)]
 
@@ -73,5 +76,45 @@ points(rawdata[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
 points(rawdata[which(Viterbi_max==3)+1,], col = "blue",lwd=3.0)
 legend("topleft", legend = c("Firing","Decay","Trend"), 
                 lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
+                cex = 1.5)
+dev.off()
+
+# celerite along
+
+modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite.stan', 
+            model_name = "celerit2", 
+            allow_undefined = TRUE,
+            includes = paste0('\n#include "', 
+                             file.path(getwd(), 
+                             'celerite2/celerite2.hpp'), '"\n'))
+
+celeritedata <- QFD_data
+celeritedata$err_prior <- c(0.01,0.01)
+
+fitcelerite <- sampling(modelcelerite, data = celeritedata,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 3000,init_r = 5)
+summcelerite <- summary(fitcelerite)
+celerite_trend <- summ_celerite[[1]][1:N + (N+23),1]
+residual <- rawdata[,2] - celerite_trend
+
+flares3sigma <- residual >= (mean(residual) + 3 * sd(residual))
+
+save.image("../res164-174-cQFDexN.RData")
+load("../res164-174-cQFDexN.RData")
+
+pdf("./Res/CeleriteQFD/131799991_16400-17400/det_compare.pdf", width = 10, height = 12)
+par(mfrow = c(2,1))
+plot(rawdata, main = "QFD")
+lines(rawdata[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
+points(rawdata[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
+points(rawdata[which(Viterbi_max==3)+1,], col = "blue",lwd=3.0)
+legend("topleft", legend = c("Firing","Decay","Trend"), 
+                lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
+                cex = 1.5)
+
+plot(rawdata, main = "3-sigma")
+lines(rawdata[,1], summcelerite[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
+points(rawdata[flares3sigma,], col = "red",lwd=3.0)
+legend("topleft", legend = c("Flare","Trend"), 
+                lty = c(NA,1), pch = c(1,NA), col = c("red","#d400ff"),
                 cex = 1.5)
 dev.off()
