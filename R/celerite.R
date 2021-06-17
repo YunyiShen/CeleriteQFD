@@ -24,7 +24,7 @@ mod <- stan_model(file = "./Stan/celerite.stan", model_name = "celerit",
 
 
 fit <- sampling(mod, data = celerite_data )
-fit2 <- optimizing(mod, data = celerite_data, verbose = T, iter = 10000)
+#fit2 <- optimizing(mod, data = celerite_data, verbose = T, iter = 10000) # should not be used for hidden variable parameterization 
 plot(fit2$par[1:1605], type = "l")
 plot(rawdata[,2]-fit2$par[1:1605])
 summ_fit <- summary(fit)
