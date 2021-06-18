@@ -91,9 +91,9 @@ modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite.stan',
 celeritedata <- QFD_data
 celeritedata$err_prior <- c(0.01,0.01)
 
-fitcelerite <- sampling(modelcelerite, data = celeritedata,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 3000,init_r = 5)
+fitcelerite <- sampling(modelcelerite, data = celeritedata,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 4000,init_r = 2)
 summcelerite <- summary(fitcelerite)
-celerite_trend <- summ_celerite[[1]][1:N + (N+23),1]
+celerite_trend <- summcelerite[[1]][1:N + (N+23),1]
 residual <- rawdata[,2] - celerite_trend
 
 flares3sigma <- residual >= (mean(residual) + 3 * sd(residual))
@@ -112,7 +112,7 @@ legend("topleft", legend = c("Firing","Decay","Trend"),
                 cex = 1.5)
 
 plot(rawdata, main = "3-sigma")
-lines(rawdata[,1], summcelerite[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
+lines(rawdata[,1], summcelerite[[1]][1:N + (N+23), 1], col = "#d400ff",lwd=3.0)
 points(rawdata[flares3sigma,], col = "red",lwd=3.0)
 legend("topleft", legend = c("Flare","Trend"), 
                 lty = c(NA,1), pch = c(1,NA), col = c("red","#d400ff"),
