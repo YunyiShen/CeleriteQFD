@@ -118,3 +118,17 @@ legend("topleft", legend = c("Flare","Trend"),
                 lty = c(NA,1), pch = c(1,NA), col = c("red","#d400ff"),
                 cex = 1.5)
 dev.off()
+
+detrended_data <- data.frame(TIME = rawdata$TIME, detrended = rawdata[,2]-summQFD[[1]][1:N+2*N+21, 1])
+
+pdf("./Res/CeleriteQFD/131799991_16400-17400/det_flares.pdf", width = 10, height = 10)
+par(mfrow = c(2,1))
+plot(detrended_data[90:140,],type = "l")
+points(detrended_data[90:140,])
+points(detrended_data[110,],col = "red")
+points(detrended_data[111:120,], col = "blue")
+plot(detrended_data[500:550,],type = "l") 
+points(detrended_data[500:550,])
+points(detrended_data[c(520,527),],col = "red")
+points(detrended_data[c(521:526,528:533),], col = "blue")
+dev.off()
