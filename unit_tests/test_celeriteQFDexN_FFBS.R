@@ -3,8 +3,9 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = T)
 
 source("./R/sampling_model.R")
+source("./R/misc.R")
 N <- 300
-set.seed(12345)
+set.seed(42)
 res <- simuQFDexN(N = N, rate_firing = .1, 
                 theta_quiet = c(0.95,0.05),
                 theta_firing = c(0.15, 0.85),
@@ -14,6 +15,8 @@ res <- simuQFDexN(N = N, rate_firing = .1,
 tt <- seq(0,10,length.out = N)
 f <- 5*sin(3 * tt)
 simu_signal <- f+res$timeseries
+plot(simu_signal)
+
 
 QFD_data <- list(N=N, t = tt,
                 y = simu_signal,
