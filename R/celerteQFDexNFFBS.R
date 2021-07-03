@@ -3,14 +3,15 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 source("./R/misc.R") # some helper
 
+
 # run QFD
-rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[16400:17400,c("TIME","PDCSAP_FLUX")]
+rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[12500:15000,c("TIME","PDCSAP_FLUX")]
 # handling missing data is currently not implemented, but only little are missing so I will just omit it for now
 rawdata <- na.omit(rawdata)
 rawdata[,2] <- rawdata[,2] - mean(rawdata[,2])
 N <- nrow(rawdata)
 plot(rawdata)
-tt <- 50 * (rawdata[,1] - min(rawdata[,1]))/(range(rawdata[,1])[2]-range(rawdata[,1])[1]) # sort of normalize the time to avoid super short period
+tt <- 100 * (rawdata[,1] - min(rawdata[,1]))/(range(rawdata[,1])[2]-range(rawdata[,1])[1]) # sort of normalize the time to avoid super short period
 
 QFD_data <- list(N=N, t = tt,
                 y = rawdata[,2],
@@ -42,7 +43,7 @@ modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQFDexN_FFBS.stan',
                              'celerite2/celerite2.hpp'), '"\n'))
 
 set.seed(42)
-fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 4000, thin = 1,init_r = 5)
+fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 6000, thin = 1,init_r = 10)
 fitQFDvb <- vb(modelQFD,data = QFD_data,init_r = 5)
 summQFD <- summary(fitQFD)
 
@@ -65,11 +66,16 @@ legend("topleft", legend = c("Firing","Decay","Trend"),
                 cex = 1.5)
 
 
-detrended <- rawdata[,2]-trend_QFD
+residual <- rawdata[,2]-trend_QFD
 
-plot(rawdata[,1],detrended)
-points(rawdata[which(FFBS_max==2)+1,1],detrended[which(FFBS_max==2)+1], col = "red",lwd=3.0)
-points(rawdata[which(FFBS_max==3)+1,1],detrended[which(FFBS_max==3)+1], col = "blue",lwd=3.0)
+plot(rawdata[,1],residual)
+points(rawdata[which(FFBS_max==2)+1,1],residual[which(FFBS_max==2)+1], col = "red",lwd=3.0)
+points(rawdata[which(FFBS_max==3)+1,1],residual[which(FFBS_max==3)+1], col = "blue",lwd=3.0)
 legend("topleft", legend = c("Firing","Decay","Trend"), 
                 lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
                 cex = 1.5)
+
+save.image("../res125-150-cQFDexNFFBS.RData")
+flares3sigma <- residual >= (mean(residual) + 2 * sd(residual))
+plot(rawdata[,1],residual)
+points(rawdata[flares3sigma,1],residual[flares3sigma], col = "red",lwd=3.0)
