@@ -11,7 +11,7 @@ rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.c
 rawdata <- na.omit(rawdata)
 rawdata[,2] <- rawdata[,2] - mean(rawdata[,2])
 N <- nrow(rawdata)
-plot(rawdata)
+#plot(rawdata)
 tt <- 350 * (rawdata[,1] - min(rawdata[,1]))/(range(rawdata[,1])[2]-range(rawdata[,1])[1]) # sort of normalize the time to avoid super short period
 
 QFD_data <- list(N=N, t = tt,
