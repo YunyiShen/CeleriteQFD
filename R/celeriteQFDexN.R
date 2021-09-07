@@ -10,20 +10,19 @@ rawdata <- na.omit(rawdata)
 rawdata[,2] <- rawdata[,2] - mean(rawdata[,2])
 N <- nrow(rawdata)
 plot(rawdata)
-tt <- 50 * (rawdata[,1] - min(rawdata[,1]))/(range(rawdata[,1])[2]-range(rawdata[,1])[1]) # sort of normalize the time to avoid super short period
 
-QFD_data <- list(N=N, t = tt,
+QFD_data <- list(N=N, t = rawdata[,1],
                 y = rawdata[,2],
-                sigma_prior = c(-2,5),
+                sigma_prior = c(0,10),
                 #Q0_prior = c(2,4),
-                Q0_prior = c(-2,4),# this is key, we need to set quality to be not too small
-                dQ_prior = c(-2,4),
-                period_prior = c(-3,3),
-                #period_prior = c(0,3),
+                Q0_prior = c(-10,10),# this is key, we need to set quality to be not too small
+                dQ_prior = c(-10,10),
+                #period_prior = c(-3,3),
+                period_prior = c(-10,10),
                 f_prior = c(1e-6,1-1e-6),
-                alpha_quiet = c(1,1), 
+                alpha_quiet = c(1,.1), 
                 alpha_firing = c(1,1),
-                alpha_decay = c(1,1,1),
+                alpha_decay = c(1,.1,1),
                 mu0_quiet = 0,
                 lambda_quiet = .01,
                 gamma_noise = c(0.01,0.01),
@@ -41,7 +40,7 @@ modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQFDexN.stan',
                              file.path(getwd(), 
                              'celerite2/celerite2.hpp'), '"\n'))
 
-fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 3000,init_r = 5)
+fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.9, max_treedepth=10), iter = 3000,init_r = 15, chains = 2)
 summQFD <- summary(fitQFD)
 
 
@@ -91,7 +90,7 @@ modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite.stan',
 celeritedata <- QFD_data
 celeritedata$err_prior <- c(0.01,0.01)
 
-fitcelerite <- sampling(modelcelerite, data = celeritedata,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 4000,init_r = 2)
+fitcelerite <- sampling(modelcelerite, data = celeritedata,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 4000,init_r = 2, chains = 2)
 summcelerite <- summary(fitcelerite)
 celerite_trend <- summcelerite[[1]][1:N + (N+23),1]
 residual <- rawdata[,2] - celerite_trend
