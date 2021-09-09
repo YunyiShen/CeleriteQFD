@@ -1,0 +1,81 @@
+library(rstan)
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+source("./R/misc.R") # some helper
+
+
+# run QFD
+rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[16400:17400,c("TIME","PDCSAP_FLUX")]
+# handling missing data is currently not implemented, but only little are missing so I will just omit it for now
+rawdata <- na.omit(rawdata)
+rawdata[,2] <- rawdata[,2] - mean(rawdata[,2])
+N <- nrow(rawdata)
+plot(rawdata)
+tt <- 50 * (rawdata[,1] - min(rawdata[,1]))/(range(rawdata[,1])[2]-range(rawdata[,1])[1]) # sort of normalize the time to avoid super short period
+
+QFD_data <- list(N=N, t = tt,
+                y = rawdata[,2],
+                sigma_prior = c(-2,5),
+                #Q0_prior = c(2,4),
+                Q0_prior = c(-2,4),# this is key, we need to set quality to be not too small
+                dQ_prior = c(-2,4),
+                period_prior = c(-3,3),
+                #period_prior = c(0,3),
+                f_prior = c(1e-6,1-1e-6),
+                alpha_quiet = c(1,1), 
+                alpha_firing = c(1,1),
+                alpha_decay = c(1,1,1),
+                mu0_quiet = 0,
+                lambda_quiet = .01,
+                gamma_noise = c(0.01,0.01),
+                mu0_rate_firing = 0,
+                sigma_rate_firing = 1e3,
+                mu0_rate_decay = 0,
+                sigma_rate_decay = 1e3,
+                diag = rep(1e-6,N)
+                )
+
+modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQFDexN2-FFBS.stan', 
+            model_name = "celeritQFTexNFFBS", 
+            allow_undefined = TRUE,
+            includes = paste0('\n#include "', 
+                             file.path(getwd(), 
+                             'celerite2/celerite2.hpp'), '"\n'))
+
+set.seed(42)
+fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 4000, thin = 1,init_r = 5)
+fitQFDvb <- vb(modelQFD,data = QFD_data,init_r = 5)
+summQFD <- summary(fitQFD)
+
+optimQFD <- optimizing(modelQFD, data = QFD_data)
+
+
+QFD_samples <- as.data.frame(fitQFD)
+
+trend_QFD <- summQFD[[1]][1:N + (N + 22),1]
+FFBS_raw <- QFD_samples[,1:(N-1) + (3*N + 3 * (N-1) + 22)]
+FFBS_max <- apply(FFBS_raw,2,majority)
+
+
+plot(rawdata)
+lines(rawdata[,1], trend_QFD, col = "#d400ff",lwd=3.0)
+points(rawdata[which(FFBS_max==2)+1,], col = "red",lwd=3.0)
+points(rawdata[which(FFBS_max==3)+1,], col = "blue",lwd=3.0)
+legend("topleft", legend = c("Firing","Decay","Trend"), 
+                lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
+                cex = 1.5)
+
+
+residual <- rawdata[,2]-trend_QFD
+
+plot(rawdata[,1],residual)
+points(rawdata[which(FFBS_max==2)+1,1],residual[which(FFBS_max==2)+1], col = "red",lwd=3.0)
+points(rawdata[which(FFBS_max==3)+1,1],residual[which(FFBS_max==3)+1], col = "blue",lwd=3.0)
+legend("topleft", legend = c("Firing","Decay","Trend"), 
+                lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
+                cex = 1.5)
+
+save.image("../res125-150-cQFDexNFFBS.RData")
+flares3sigma <- residual >= (mean(residual) + 2 * sd(residual))
+plot(rawdata[,1],residual)
+points(rawdata[flares3sigma,1],residual[flares3sigma], col = "red",lwd=3.0)
