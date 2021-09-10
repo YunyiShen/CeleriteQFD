@@ -1446,7 +1446,7 @@ dotCholQuasiPeriod(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
 
   local_scalar_t__ a1,b1,c1,d1,a2,b2,c2,d2;
 
-  a1 = .5 * B / C;
+  a1 = B /(2 + C);
   b1 = 0;
   c1 = 1/L;
   d1 = 2.*3.1415926535/P;
