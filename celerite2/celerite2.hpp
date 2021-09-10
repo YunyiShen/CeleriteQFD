@@ -1426,6 +1426,61 @@ dotCholSHO(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
 }
 
 
+template <typename T0__, typename T1__, typename T2__, typename T3__, typename T4__, typename T5__, typename T6__>
+Eigen::Matrix<typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__>::type>::type,Eigen::Dynamic, 1>
+dotCholQuasiPeriod(const Eigen::Matrix<T0__, Eigen::Dynamic, 1>& t,
+              const Eigen::Matrix<T1__, Eigen::Dynamic, 1>& y,
+              const T2__& B,
+              const T3__& L,
+              const T4__& P,
+              const T5__& C,
+              const Eigen::Matrix<T6__, Eigen::Dynamic, 1>& diag, std::ostream* pstream__){
+  typedef typename boost::math::tools::promote_args<T0__, T1__, T2__, T3__, typename boost::math::tools::promote_args<T4__, T5__, T6__>::type>::type local_scalar_t__;
+  typedef local_scalar_t__ fun_return_scalar_t__;
+
+  // local copy of data, for whatever reason it is necessary for the solver
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> tloc;
+  //Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> yloc;
+  tloc = t;
+  //yloc = y;
+
+  local_scalar_t__ a1,b1,c1,d1,a2,b2,c2,d2;
+
+  a1 = .5 * B / C;
+  b1 = 0;
+  c1 = 1/L;
+  d1 = 2.*3.1415926535/P;
+
+  a2 = a1*(1+C);
+  b2 = 0;
+  c2 = c1;
+  d2 = 0;
+
+  terms::ComplexTerm<local_scalar_t__> quasiperiodicterm(a1,b1,c1,d1);
+  terms::ComplexTerm<local_scalar_t__> term2(a2,b2,c2,d2);
+  quasiperiodicterm + term2;
+
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> c;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> a;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> U;
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, Eigen::Dynamic> V;
+
+  std::tie (c, a, U, V) = quasiperiodicterm.get_celerite_matrices(tloc,diag);// get those magic matrixes
+  Eigen::Index flag;
+  flag = interfaces::factor(tloc, c, a, U, V, a, V); // to reuse memory
+  
+  Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> Z;
+  Z = y;
+  Eigen::Array<local_scalar_t__, Eigen::Dynamic, 1> temp;
+  temp = a.array();
+  temp = sqrt(temp);
+  temp = temp * y.array();
+  Z = temp.matrix();
+  interfaces::matmul_lower(tloc, c, U, V, Z, Z);
+  return(Z);
+}
+
+
 
 
 
