@@ -16,12 +16,12 @@ QFD_data <- list(N=N, t = rawdata[,1],
                 B_prior = c(-10,0),
                 L_prior = c(1.5,5),
                 P_prior = c(-3,5),
-                C_prior = c(-5,5),
+                C_prior = c(-10,10),
                 alpha_quiet = c(1,.1), 
                 alpha_firing = c(1,1),
                 alpha_decay = c(1,.1,1),
                 mu0_quiet = 0,
-                lambda_quiet = .01,
+                lambda_quiet = 10,
                 gamma_noise = c(0.01,0.01),
                 mu0_rate_firing = 0,
                 sigma_rate_firing = 1e3,
@@ -61,7 +61,7 @@ load("../res164-174-cQFDexN.RData")
 
 ## visualize
 QFD_samples <- as.data.frame(fitQFD)
-Viterbi_raw <- QFD_samples[,1:(N-1) + (N + 19)]
+Viterbi_raw <- QFD_samples[,1:(N-1) + (N + 21)]
 
 Viterbi_max <- apply(Viterbi_raw,2,majority)
 
@@ -77,7 +77,7 @@ dev.off()
 
 # celerite along
 
-modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celeriteSHO.stan', 
+modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celeriteQP.stan', 
             model_name = "celerit2", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 

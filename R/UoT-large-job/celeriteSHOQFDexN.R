@@ -18,17 +18,18 @@ QFD_data <- list(N=N, t = rawdata[,1],
                 S0_prior = c(-10,10),
                 w0_prior = c(-10,10),
                 Q_prior = c(-10,10),
-                alpha_quiet = c(1,.1), 
+                alpha_quiet = c(1,.01), 
                 alpha_firing = c(1,1),
-                alpha_decay = c(1,.1,1),
+                alpha_decay = c(1,.01,.1),
                 mu0_quiet = 0,
-                lambda_quiet = .01,
-                gamma_noise = c(0.01,0.01),
+                lambda_quiet = 10,
+                gamma_noise = c(1,0.01),
                 mu0_rate_firing = 0,
                 sigma_rate_firing = 1e3,
                 mu0_rate_decay = 0,
                 sigma_rate_decay = 1e3,
-                diag = rep(1e-6,N)
+                diag = rep(1e-3,N),
+                err_prior = c(.01,.01)
                 )
 
 modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteSHOQFDexN.stan', 
@@ -39,7 +40,7 @@ modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteSHOQFDexN.stan',
                              'celerite2/celerite2.hpp'), '"\n'))                       
 
 set.seed(42)
-fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.99, max_treedepth=15), chain = 2,iter = 4000, thin = 1,init_r = 15)
+fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.99, max_treedepth=10), chain = 2,iter = 2000, thin = 1,init_r = 15)
 
 summQFD <- summary(fitQFD)
 
@@ -77,3 +78,11 @@ legend("topleft", legend = c("Firing","Decay","Trend"),
                 cex = 1.5)
 
 save.image("./Res/UoT-large-job/res100-174-cSHOQFDexN.RData")
+
+modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celeriteSHO.stan', 
+            model_name = "celeritSHO", 
+            allow_undefined = TRUE,
+            includes = paste0('\n#include "', 
+                             file.path(getwd(), 
+                             'celerite2/celerite2.hpp'), '"\n'))
+fitcelerite <- sampling(modelcelerite, data = QFD_data, chains = 2)

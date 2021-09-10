@@ -4,7 +4,7 @@ rstan_options(auto_write = TRUE)
 source("./R/misc.R") # some helper
 
 # run QFD
-rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[16400:17400,c("TIME","PDCSAP_FLUX")]
+rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[10000:17400,c("TIME","PDCSAP_FLUX")]
 # handling missing data is currently not implemented, but only little are missing so I will just omit it for now
 rawdata <- na.omit(rawdata)
 rawdata[,2] <- rawdata[,2] - mean(rawdata[,2])
@@ -13,14 +13,15 @@ plot(rawdata)
 
 QFD_data <- list(N=N, t = rawdata[,1],
                 y = rawdata[,2],
-                S0_prior = c(-10,10),
-                w0_prior = c(-10,10),
-                Q_prior = c(-10,10),
+                B_prior = c(-10,0),
+                L_prior = c(1.5,5),
+                P_prior = c(-3,5),
+                C_prior = c(-10,10),
                 alpha_quiet = c(1,.1), 
                 alpha_firing = c(1,1),
                 alpha_decay = c(1,.1,1),
                 mu0_quiet = 0,
-                lambda_quiet = .01,
+                lambda_quiet = 10,
                 gamma_noise = c(0.01,0.01),
                 mu0_rate_firing = 0,
                 sigma_rate_firing = 1e3,
@@ -29,14 +30,14 @@ QFD_data <- list(N=N, t = rawdata[,1],
                 diag = rep(1e-6,N)
                 )
 
-modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteSHOQFDexN.stan', 
-            model_name = "celeritSHOQFTexN", 
+modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQPQFDexN.stan', 
+            model_name = "celeritQPQFTexN", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
                              file.path(getwd(), 
                              'celerite2/celerite2.hpp'), '"\n'))
 
-fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.9, max_treedepth=10), iter = 3000,init_r = 15, chains = 2)
+fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.9, max_treedepth=10), iter = 2000,init_r = 15, chains = 2)
 summQFD <- summary(fitQFD)
 
 
@@ -60,7 +61,7 @@ load("../res164-174-cQFDexN.RData")
 
 ## visualize
 QFD_samples <- as.data.frame(fitQFD)
-Viterbi_raw <- QFD_samples[,1:(N-1) + (N + 19)]
+Viterbi_raw <- QFD_samples[,1:(N-1) + (N + 21)]
 
 Viterbi_max <- apply(Viterbi_raw,2,majority)
 
@@ -76,7 +77,7 @@ dev.off()
 
 # celerite along
 
-modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celeriteSHO.stan', 
+modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celeriteQP.stan', 
             model_name = "celerit2", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
