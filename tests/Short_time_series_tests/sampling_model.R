@@ -98,3 +98,6 @@ simuQFDexN <- function(N = 1000, theta_quiet = c(0.99,0.01),
     return(list(timeseries = res, state = states))
 
 }
+
+
+
