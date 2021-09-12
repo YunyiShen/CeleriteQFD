@@ -1,10 +1,12 @@
 library(rstan)
-options(mc.cores = parallel::detectCores())
+options(mc.cores = parallel::detectCores()/2)
 rstan_options(auto_write = TRUE)
 source("./R/misc.R") # some helper
 
 # run QFD
-rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[16400:17400,c("TIME","PDCSAP_FLUX")]
+rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[16000:17400,c("TIME","PDCSAP_FLUX")]
+rawdata <- read.csv("./Data/tess2018206045859-s0001-0000000031381302-0120-s_lc.csv")[6000:7500,c("TIME","PDCSAP_FLUX")]
+
 # handling missing data is currently not implemented, but only little are missing so I will just omit it for now
 rawdata <- na.omit(rawdata)
 rawdata[,2] <- rawdata[,2] - mean(rawdata[,2])
@@ -13,12 +15,12 @@ plot(rawdata)
 
 QFD_data <- list(N=N, t = rawdata[,1],
                 y = rawdata[,2],
-                sigma_prior = c(0,10),
+                sigma_prior = c(-8,8),
                 #Q0_prior = c(2,4),
-                Q0_prior = c(-10,10),# this is key, we need to set quality to be not too small
-                dQ_prior = c(-10,10),
+                Q0_prior = c(-8,8),# this is key, we need to set quality to be not too small
+                dQ_prior = c(-8,8),
                 #period_prior = c(-3,3),
-                period_prior = c(-10,10),
+                period_prior = c(-8,8),
                 f_prior = c(1e-6,1-1e-6),
                 alpha_quiet = c(1,.1), 
                 alpha_firing = c(1,1),
@@ -100,7 +102,7 @@ flares3sigma <- residual >= (mean(residual) + 3 * sd(residual))
 save.image("../res164-174-cQFDexN.RData")
 load("../res164-174-cQFDexN.RData")
 
-pdf("./Res/CeleriteQFD/131799991_16400-17400/det_compare.pdf", width = 10, height = 12)
+pdf("./Res/CeleriteQFD/031381302_6000-7500/det_compare.pdf", width = 10, height = 6)
 par(mfrow = c(2,1))
 plot(rawdata, main = "QFD")
 lines(rawdata[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)

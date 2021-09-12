@@ -1,19 +1,20 @@
 library(rstan)
-options(mc.cores = parallel::detectCores())
+options(mc.cores = parallel::detectCores()/2)
 rstan_options(auto_write = F)
 
-N <- 300
-tt <- seq(0,5,length.out = N)
-f <- 5*sin(3 * tt)
+N <- 600
+tt <- seq(0,10,length.out = N)
+f <- 5*(sin(0.5*tt)+1)*sin(3 * tt)
+plot(tt,f)
 #plot(t,f)
 y <- f + rnorm(length(tt),0,1)
 plot(tt,y)
 lines(tt,f)
 celerite_data <- list(N=N, t = tt, y = y,
-                     sigma_prior = c(-2,2),
-                     period_prior = c(-2,2),
-                     Q0_prior = c(-2,2),
-                     dQ_prior = c(-2,2),
+                     sigma_prior = c(-10,10),
+                     period_prior = c(-10,10),
+                     Q0_prior = c(-10,10),
+                     dQ_prior = c(-10,10),
                      f_prior = c(1e-6,1-1e-6),
                      err_prior = c(0.01,0.01),
                      diag = 1e-6+0*tt)
@@ -43,7 +44,7 @@ summ_celerite2[[1]][1:22 + N,1]
 plot(summ_celerite2[[1]][1:N + (N+23),1], type = "l")
 points(y,col = "red")
 
-fit <- sampling(modelcelerite, data = celerite_data,control = list(adapt_delta = 0.995,max_treedepth=15), iter = 2000)
+fit <- sampling(modelcelerite, data = celerite_data,control = list(adapt_delta = 0.9,max_treedepth=10), iter = 2000)
 summ_fit <- summary(fit)
 plot(summ_fit[[1]][1:N + (N+23),1])
 plot(y-summ_fit[[1]][1:N + (N+23),1])

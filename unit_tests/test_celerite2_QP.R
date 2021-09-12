@@ -2,10 +2,10 @@ library(rstan)
 options(mc.cores = parallel::detectCores()/2)
 rstan_options(auto_write = F)
 
-N <- 300
-tt <- seq(0,5,length.out = N)
-f <- 5*sin(3 * tt)
-#plot(t,f)
+N <- 600
+tt <- seq(0,10,length.out = N)
+f <- 5*(sin(0.5*tt)+1)*sin(3 * tt)
+plot(tt,f)
 y <- f + rnorm(length(tt),0,1)
 plot(tt,y)
 lines(tt,f)
