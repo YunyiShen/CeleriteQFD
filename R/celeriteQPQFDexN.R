@@ -19,7 +19,7 @@ QFD_data <- list(N=N, t = rawdata[,1],
                 C_prior = c(-10,10),
                 alpha_quiet = c(1,.1), 
                 alpha_firing = c(1,1),
-                alpha_decay = c(1,.1,1),
+                alpha_decay = c(1,.1,.1),
                 mu0_quiet = 0,
                 lambda_quiet = 10,
                 gamma_noise = c(0.01,0.01),
@@ -42,7 +42,7 @@ summQFD <- summary(fitQFD)
 
 
 plot(rawdata)
-lines(rawdata[,1], summQFD[[1]][1:N+2*N+8, 1], type = "l", col = "blue")
+lines(rawdata[,1], summQFD[[1]][1:N+2*N+20, 1], type = "l", col = "blue")
 
 par(mfrow = c(2,1))
 plot(tt[-1], summQFD[[1]][1:(N-1) + (N + 9),1])
@@ -67,7 +67,7 @@ Viterbi_max <- apply(Viterbi_raw,2,majority)
 
 pdf("./Res/CeleriteQFD/131799991_16400-17400/det.pdf", width = 10, height = 6)
 plot(rawdata)
-lines(rawdata[,1], summQFD[[1]][1:N+2*N+8, 1], col = "#d400ff",lwd=3.0)
+lines(rawdata[,1], summQFD[[1]][1:N+2*N+20, 1], col = "#d400ff",lwd=3.0)
 points(rawdata[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
 points(rawdata[which(Viterbi_max==3)+1,], col = "blue",lwd=3.0)
 legend("topleft", legend = c("Firing","Decay","Trend"), 

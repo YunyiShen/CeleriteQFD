@@ -12,23 +12,23 @@ N <- nrow(rawdata)
 plot(rawdata)
 
 QFD_data <- list(N=N, t = rawdata[,1],
-                y = rawdata[,2],
-                B_prior = c(-10,0),
-                L_prior = c(1.5,5),
-                P_prior = c(-3,5),
-                C_prior = c(-10,10),
-                alpha_quiet = c(1,.1), 
-                alpha_firing = c(1,1),
-                alpha_decay = c(1,.1,1),
-                mu0_quiet = 0,
-                lambda_quiet = 10,
-                gamma_noise = c(0.01,0.01),
-                mu0_rate_firing = 0,
-                sigma_rate_firing = 1e3,
-                mu0_rate_decay = 0,
-                sigma_rate_decay = 1e3,
-                diag = rep(1e-6,N)
-                )
+                 y = rawdata[,2],
+                 B_prior = c(-10,0),
+                 L_prior = c(1.5,5),
+                 P_prior = c(-3,5),
+                 C_prior = c(-10,10),
+                 alpha_quiet = c(1,.1), 
+                 alpha_firing = c(1,1),
+                 alpha_decay = c(1,.1,.1),
+                 mu0_quiet = 0,
+                 lambda_quiet = 10,
+                 gamma_noise = c(0.01,0.01),
+                 mu0_rate_firing = 0,
+                 sigma_rate_firing = 1e3,
+                 mu0_rate_decay = 0,
+                 sigma_rate_decay = 1e3,
+                 diag = rep(1e-6,N)
+)
 
 modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQPQFDexN.stan', 
             model_name = "celeritQPQFTexN", 
@@ -37,7 +37,7 @@ modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQPQFDexN.stan',
                              file.path(getwd(), 
                              'celerite2/celerite2.hpp'), '"\n'))
 
-fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.9, max_treedepth=10), iter = 2000,init_r = 15, chains = 2)
+fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.995, max_treedepth=20), iter = 2000,init_r = 15, chains = 2)
 summQFD <- summary(fitQFD)
 
 
