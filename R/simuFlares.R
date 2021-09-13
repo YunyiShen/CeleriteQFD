@@ -17,6 +17,7 @@ kepler_flare <- function(tt,t_half,n,flux_dist = rPareto, ...){
     states <- 1 + flare # store states
     flux_all <- flux_dist(n = n, ...)
     peak_time_all <- sample(tt, n)
+    peak_time_all <- sort(peak_time_all)
     #browser()
     for(i in 1:n){
         flux_loc <- flux_all[i]
@@ -26,7 +27,7 @@ kepler_flare <- function(tt,t_half,n,flux_dist = rPareto, ...){
         raising_phase <- which(peak_time_loc-tt >=0 & peak_time_loc-tt <= t_half_loc )
         decaying_phase <- which(tt - peak_time_loc >0 & tt - peak_time_loc <= 10 * t_half_loc )
 
-        states[raising_phase] <- 1
+        states[raising_phase] <- 2
         states[decaying_phase] <- 3
 
         raising_time_loc <- (tt[raising_phase]-peak_time_loc)/t_half_loc
