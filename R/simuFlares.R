@@ -1,6 +1,19 @@
-rPareto <- function(n,xm=1,alpha=1){
-    U <- runif(n)
-    xm/((U)^(1/alpha))
+rPareto <- function(n,xm=1,alpha=1,offset=0,upper = Inf){
+    n_sample <- 0
+    res <- c()
+    while(n_sample<n){
+        n_remain <- n-n_sample
+        U <- runif(n_remain)
+        x_temp <- xm/((U)^(1/alpha))+offset
+        x_temp <- x_temp[x_temp<=upper]
+        res <- c(res,x_temp)
+        n_sample <- length(res)
+    }
+    return(res)
+}
+
+rmovexp <- function(n,rate = 1,offset = 0){
+    offset+rexp(n,rate)
 }
 
 kepler_raising <- function(x){
