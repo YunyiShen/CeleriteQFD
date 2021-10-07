@@ -1,45 +1,48 @@
+args <- commandArgs(trailingOnly=TRUE)
+install.packages("rstan")
 library(rstan)
-options(mc.cores = parallel::detectCores()/2)
+options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
-source("./R/misc.R") # some helper
-source("./R/simuFlares.R")
+source("./CeleriteQFD/R/misc.R") # some helper
+source("./CeleriteQFD/R/simuFlares.R")
+file_num <- paste0(args[1],"-",args[2])
+base_dir <- paste0("./res_",args[1],"-",args[2],"/")
 
-rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[10000:11500,c("TIME","PDCSAP_FLUX")]
+rawdata <- read.csv("./CeleriteQFD/Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[10000:11500,c("TIME","PDCSAP_FLUX")]
 rawdata <- na.omit(rawdata)
 rawdata[,2] <- rawdata[,2]-mean(rawdata[,2])
 
-res_path <- "./Res/Injection_recover/"
-file_num <- 2
+res_path <- base_dir
 xm <- 10
 alpha <- 1
 offset <- 30
 upper <- 150
 n_inj <- 5
 t_half <- .00005
-res_file <- paste0(res_path,"inj_rec_loss_",file_num,".csv")
-gtstate_file <- paste0(res_path,"inj_rec_gtstate_",file_num,".csv")
-flare_file <- paste0(res_path,"inj_rec_flare_",file_num,".csv")
+res_file <- paste0(res_path,"inj_rec_loss",".csv")
+gtstate_file <- paste0(res_path,"inj_rec_gtstate",".csv")
+flare_file <- paste0(res_path,"inj_rec_flare",".csv")
 
-QFD_file <- paste0(res_path,"inj_rec_QFD_",file_num,".csv")
-sigma_file <- paste0(res_path,"inj_rec_3sigma_",file_num,".csv")
-
-
+QFD_file <- paste0(res_path,"inj_rec_QFD",".csv")
+sigma_file <- paste0(res_path,"inj_rec_3sigma",".csv")
 
 
-n_rep <- 45
+
+
+n_rep <- 1
 i_res <- 1
 
 n_res <- n_rep * 2
 
 
-modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQFDexN.stan', 
+modelQFD <- stan_model(file = './CeleriteQFD/Stan/Morphology/QFD/CeleriteQFDexN.stan', 
             model_name = "celeritQFTexN", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
                              file.path(getwd(), 
                              'celerite2/celerite2.hpp'), '"\n'))
 
-modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite.stan', 
+modelcelerite <- stan_model(file = './CeleriteQFD/Stan/Prototypes/Celerite/celerite.stan', 
             model_name = "celerit2", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
@@ -56,7 +59,7 @@ sigma_df <- data.frame(matrix(NA, n_rep, N))
 
 
 
-set.seed(12345)
+set.seed(as.numeric(args[1])+as.numeric(args[2]))
 for(i in 1:n_rep){
     keplerflare_sim <- kepler_flare(rawdata[,1], t_half, n_inj,rPareto, xm, alpha, offset, upper)
     injected <- rawdata
