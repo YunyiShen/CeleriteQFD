@@ -40,14 +40,14 @@ modelQFD <- stan_model(file = './CeleriteQFD/Stan/Morphology/QFD/CeleriteQFDexN.
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
                              file.path(getwd(), 
-                             'celerite2/celerite2.hpp'), '"\n'))
+                             'CeleriteQFD/celerite2/celerite2.hpp'), '"\n'))
 
 modelcelerite <- stan_model(file = './CeleriteQFD/Stan/Prototypes/Celerite/celerite.stan', 
             model_name = "celerit2", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
                              file.path(getwd(), 
-                             'celerite2/celerite2.hpp'), '"\n'))
+                             'CeleriteQFD/celerite2/celerite2.hpp'), '"\n'))
 
 
 res_df <- data.frame(matrix(NA, n_res, 15))
