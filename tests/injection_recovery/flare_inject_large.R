@@ -9,7 +9,7 @@ rawdata <- na.omit(rawdata)
 rawdata[,2] <- rawdata[,2]-mean(rawdata[,2])
 
 res_path <- "./Res/Injection_recover/"
-file_num <- 1
+file_num <- 2
 xm <- 10
 alpha <- 1
 offset <- 30
@@ -26,7 +26,7 @@ sigma_file <- paste0(res_path,"inj_rec_3sigma_",file_num,".csv")
 
 
 
-n_rep <- 5
+n_rep <- 45
 i_res <- 1
 
 n_res <- n_rep * 2
@@ -56,7 +56,7 @@ sigma_df <- data.frame(matrix(NA, n_rep, N))
 
 
 
-set.seed(42)
+set.seed(12345)
 for(i in 1:n_rep){
     keplerflare_sim <- kepler_flare(rawdata[,1], t_half, n_inj,rPareto, xm, alpha, offset, upper)
     injected <- rawdata
