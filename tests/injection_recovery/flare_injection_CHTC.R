@@ -1,5 +1,5 @@
 args <- commandArgs(trailingOnly=TRUE)
-install.packages("rstan")
+#install.packages("rstan")
 library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
