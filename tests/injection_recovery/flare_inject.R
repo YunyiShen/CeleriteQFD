@@ -1,5 +1,5 @@
 library(rstan)
-options(mc.cores = parallel::detectCores()/2)
+options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 source("./R/misc.R") # some helper
 source("./R/simuFlares.R")
@@ -44,7 +44,7 @@ modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQFDexN.stan',
                              file.path(getwd(), 
                              'celerite2/celerite2.hpp'), '"\n'))
 
-fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.9, max_treedepth=15), iter = 3000,init_r = 15, chains = 2)
+fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.9, max_treedepth=15), iter = 2000,init_r = 15, chains = 2)
 summQFD <- summary(fitQFD)
 
 tt <- rawdata[,1]
@@ -75,7 +75,8 @@ residual <- rawdata[,2] - celerite_trend
 
 flares3sigma <- residual >= (mean(residual) + 3 * sd(residual))
 
-par(mfrow = c(3,1))
+jpeg("QFD_example.jpg", width = 8, height = 8, units = "in", res = 300)
+par(mfrow = c(4,1))
 plot(rawdata, main = "QFD")
 lines(rawdata[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
 points(rawdata[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
@@ -84,7 +85,7 @@ legend("topleft", legend = c("Firing","Decay","Trend"),
                 lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
                 cex = 1.5)
 
-plot(rawdata, main = "3-sigma")
+plot(rawdata, main = "1-3-sigma")
 lines(rawdata[,1], summcelerite[[1]][1:N + (N+23), 1], col = "#d400ff",lwd=3.0)
 points(rawdata[flares3sigma,], col = "red",lwd=3.0)
 legend("topleft", legend = c("Flare","Trend"), 
@@ -95,5 +96,8 @@ plot(rawdata, main = "ground truth")
 points(rawdata[which(keplerflare_sim$states==2),], col = "red",lwd=3.0)
 points(rawdata[which(keplerflare_sim$states==3),], col = "blue",lwd=3.0)
 
+plot(keplerflare_sim$flare, main = "flare channel")
+
+dev.off()
 
 save.image("../simple_flare_injection.RData")
