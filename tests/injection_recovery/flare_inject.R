@@ -96,7 +96,7 @@ plot(rawdata, main = "ground truth")
 points(rawdata[which(keplerflare_sim$states==2),], col = "red",lwd=3.0)
 points(rawdata[which(keplerflare_sim$states==3),], col = "blue",lwd=3.0)
 
-plot(keplerflare_sim$flare, main = "flare channel")
+plot(rawdata[,1],keplerflare_sim$flare, main = "flare channel")
 
 dev.off()
 
