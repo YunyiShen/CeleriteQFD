@@ -8,7 +8,9 @@ source("./CeleriteQFD/R/simuFlares.R")
 file_num <- paste0(args[1],"-",args[2])
 base_dir <- paste0("./res_",args[1],"-",args[2],"/")
 
-rawdata <- read.csv("./CeleriteQFD/Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[10000:11500,c("TIME","PDCSAP_FLUX")]
+#rawdata <- read.csv("./CeleriteQFD/Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[10000:11500,c("TIME","PDCSAP_FLUX")]
+rawdata <- read.csv("./CeleriteQFD/Data/tess2018206045859-s0001-0000000031381302-0120-s_lc.csv")[1:1500,c("TIME","PDCSAP_FLUX")]
+
 rawdata <- na.omit(rawdata)
 rawdata[,2] <- rawdata[,2]-mean(rawdata[,2])
 N <- nrow(rawdata)
