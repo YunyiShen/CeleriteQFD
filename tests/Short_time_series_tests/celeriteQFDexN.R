@@ -8,13 +8,16 @@ rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.c
 rawdata <- read.csv("./Data/tess2018206045859-s0001-0000000031381302-0120-s_lc.csv")[6000:7500,c("TIME","PDCSAP_FLUX")]
 
 # handling missing data is currently not implemented, but only little are missing so I will just omit it for now
-rawdata <- na.omit(rawdata)
-rawdata[,2] <- rawdata[,2] - mean(rawdata[,2])
+
+rawdata[,2] <- rawdata[,2] - mean(rawdata[,2], na.rm = TRUE)
+observed <- (!is.na(rawdata[,2])) * 1
+rawdata[is.na(rawdata[,2]),2] <- 0
 N <- nrow(rawdata)
 plot(rawdata)
 
 QFD_data <- list(N=N, t = rawdata[,1],
                 y = rawdata[,2],
+                observed = observed,
                 sigma_prior = c(-8,8),
                 #Q0_prior = c(2,4),
                 Q0_prior = c(-8,8),# this is key, we need to set quality to be not too small
@@ -35,7 +38,7 @@ QFD_data <- list(N=N, t = rawdata[,1],
                 diag = rep(1e-6,N)
                 )
 
-modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQFDexN.stan', 
+modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQFDexN-missing-handling.stan', 
             model_name = "celeritQFTexN", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
@@ -82,7 +85,7 @@ dev.off()
 
 # celerite along
 
-modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite.stan', 
+modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite-missing-handling.stan', 
             model_name = "celerit2", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
@@ -92,7 +95,7 @@ modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite.stan',
 celeritedata <- QFD_data
 celeritedata$err_prior <- c(0.01,0.01)
 
-fitcelerite <- sampling(modelcelerite, data = celeritedata,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 4000,init_r = 2, chains = 2)
+fitcelerite <- sampling(modelcelerite, data = celeritedata,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 2000,init_r = 2, chains = 2)
 summcelerite <- summary(fitcelerite)
 celerite_trend <- summcelerite[[1]][1:N + (N+23),1]
 residual <- rawdata[,2] - celerite_trend

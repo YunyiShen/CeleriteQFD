@@ -5,20 +5,24 @@ source("./R/misc.R") # some helper
 source("./R/simuFlares.R")
 
 rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[10000:11500,c("TIME","PDCSAP_FLUX")]
-rawdata <- na.omit(rawdata)
-rawdata[,2] <- rawdata[,2]-mean(rawdata[,2])
+
+rawdata[,2] <- rawdata[,2]-mean(rawdata[,2], na.rm = T)
 
 set.seed(12345)
 keplerflare_sim <- kepler_flare(rawdata[,1], .00005, 5,rPareto,xm = 50, alpha = 1) 
 plot(keplerflare_sim$flare) 
+#rawdata <- na.omit(rawdata)
 
 injected <- rawdata
 injected[,2] <- injected[,2] + keplerflare_sim$flare
+observed <- (!is.na(injected[,2])) * 1
+injected[is.na(injected[,2]),2] <- 0
 
 N <- nrow(injected)
 
 QFD_data <- list(N=N, t = injected[,1],
                 y = injected[,2],
+                observed = observed,
                 sigma_prior = c(-8,8),
                 Q0_prior = c(-8,8),
                 dQ_prior = c(-8,8),
@@ -37,7 +41,7 @@ QFD_data <- list(N=N, t = injected[,1],
                 diag = rep(1e-6,N)
                 )
 
-modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQFDexN.stan', 
+modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQFDexN-missing-handling.stan', 
             model_name = "celeritQFTexN", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
@@ -58,7 +62,7 @@ Viterbi_raw <- QFD_samples[,1:(N-1) + (N + 22)]
 
 Viterbi_max <- apply(Viterbi_raw,2,majority)
 
-modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite.stan', 
+modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite-missing-handling.stan', 
             model_name = "celerit2", 
             allow_undefined = TRUE,
             includes = paste0('\n#include "', 
