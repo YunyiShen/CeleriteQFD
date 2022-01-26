@@ -7,7 +7,7 @@ args <- as.numeric(args)
 
 # 10 slices in total to be run on CHTC
 the_slice <- args * 2000 + (1:(2000+76*(args==9))) # the last one being 20076, so last slice has 76 more
-name_slice <- paste0("QFD-031381302-slice-",min(the_slice),"-",max(the_slice))
+name_slice <- paste0("./res-",args,"/QFD-031381302-slice-",min(the_slice),"-",max(the_slice))
 
 rawdata <- read.csv("./CeleriteQFD/Data/tess2018206045859-s0001-0000000031381302-0120-s_lc.csv")[the_slice,c("TIME","PDCSAP_FLUX")]
 
