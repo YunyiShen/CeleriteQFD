@@ -105,7 +105,7 @@ flares3sigma <- residual >= (mean(residual) + 3 * sd(residual))
 save.image("../res164-174-cQFDexN.RData")
 load("../res164-174-cQFDexN.RData")
 
-pdf("./Res/CeleriteQFD/131799991_16400-17400/det_compare2.pdf", width = 7, height = 7.5)
+pdf("./Res/CeleriteQFD/031381302_6000-8000/det_compare2.pdf", width = 7, height = 7.5)
 par(mfrow = c(2,1))
 plot(rawdata, main = "Proposed HMM", ylab = "Centered Flux", xlab = "Time")
 lines(rawdata[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
