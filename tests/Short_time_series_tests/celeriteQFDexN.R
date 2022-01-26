@@ -5,7 +5,7 @@ source("./R/misc.R") # some helper
 
 # run QFD
 rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[16000:17400,c("TIME","PDCSAP_FLUX")]
-rawdata <- read.csv("./Data/tess2018206045859-s0001-0000000031381302-0120-s_lc.csv")[6000:7500,c("TIME","PDCSAP_FLUX")]
+rawdata <- read.csv("./Data/tess2018206045859-s0001-0000000031381302-0120-s_lc.csv")[6000:8000,c("TIME","PDCSAP_FLUX")]
 
 # handling missing data is currently not implemented, but only little are missing so I will just omit it for now
 
@@ -45,7 +45,7 @@ modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQFDexN-missing-hand
                              file.path(getwd(), 
                              'celerite2/celerite2.hpp'), '"\n'))
 
-fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.9, max_treedepth=10), iter = 3000,init_r = 15, chains = 2)
+fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.99, max_treedepth=15), iter = 2000,init_r = 15, chains = 2)
 summQFD <- summary(fitQFD)
 
 

@@ -5,11 +5,12 @@ source("./R/misc.R") # some helper
 source("./R/simuFlares.R")
 
 rawdata <- read.csv("./Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[10000:11500,c("TIME","PDCSAP_FLUX")]
+rawdata <- read.csv("./Data/tess2018206045859-s0001-0000000031381302-0120-s_lc.csv")[1:1500,c("TIME","PDCSAP_FLUX")]
 
 rawdata[,2] <- rawdata[,2]-mean(rawdata[,2], na.rm = T)
 
 set.seed(12345)
-keplerflare_sim <- kepler_flare(rawdata[,1], .00005, 5,rPareto,xm = 50, alpha = 1) 
+keplerflare_sim <- kepler_flare(rawdata[,1], .00005, 5,rPareto,xm = 5, alpha = 1, offset = 10, upper = 150) 
 plot(keplerflare_sim$flare) 
 #rawdata <- na.omit(rawdata)
 
@@ -48,13 +49,13 @@ modelQFD <- stan_model(file = './Stan/Morphology/QFD/CeleriteQFDexN-missing-hand
                              file.path(getwd(), 
                              'celerite2/celerite2.hpp'), '"\n'))
 
-fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.9, max_treedepth=15), iter = 2000,init_r = 15, chains = 2)
+fitQFD <- sampling(modelQFD, data = QFD_data,control = list(adapt_delta = 0.9, max_treedepth=10), iter = 2000,init_r = 15, chains = 2)
 summQFD <- summary(fitQFD)
 
 tt <- rawdata[,1]
 
 
-plot(tt, rawdata[,2], col = "blue")
+plot(tt, injected[,2], col = "blue")
 lines(tt, summQFD[[1]][1:N+2*N+21, 1], type = "l")
 
 QFD_samples <- as.data.frame(fitQFD)
@@ -72,35 +73,35 @@ modelcelerite <- stan_model(file = './Stan/Prototypes/Celerite/celerite-missing-
 celeritedata <- QFD_data
 celeritedata$err_prior <- c(0.01,0.01)
 
-fitcelerite <- sampling(modelcelerite, data = celeritedata,control = list(adapt_delta = 0.9, max_treedepth=15), iter = 3000,init_r = 2, chains = 2)
+fitcelerite <- sampling(modelcelerite, data = celeritedata,control = list(adapt_delta = 0.9, max_treedepth=10), iter = 2000,init_r = 2, chains = 2)
 summcelerite <- summary(fitcelerite)
 celerite_trend <- summcelerite[[1]][1:N + (N+23),1]
-residual <- rawdata[,2] - celerite_trend
+residual <- injected[,2] - celerite_trend
 
 flares3sigma <- residual >= (mean(residual) + 3 * sd(residual))
 
 jpeg("QFD_example.jpg", width = 8, height = 8, units = "in", res = 300)
 par(mfrow = c(4,1))
-plot(rawdata, main = "QFD")
-lines(rawdata[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
-points(rawdata[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
-points(rawdata[which(Viterbi_max==3)+1,], col = "blue",lwd=3.0)
+plot(injected, main = "QFD")
+lines(injected[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
+points(injected[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
+points(injected[which(Viterbi_max==3)+1,], col = "blue",lwd=3.0)
 legend("topleft", legend = c("Firing","Decay","Trend"), 
                 lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
                 cex = 1.5)
 
-plot(rawdata, main = "1-3-sigma")
-lines(rawdata[,1], summcelerite[[1]][1:N + (N+23), 1], col = "#d400ff",lwd=3.0)
-points(rawdata[flares3sigma,], col = "red",lwd=3.0)
+plot(injected, main = "1-3-sigma")
+lines(injected[,1], summcelerite[[1]][1:N + (N+23), 1], col = "#d400ff",lwd=3.0)
+points(injected[flares3sigma,], col = "red",lwd=3.0)
 legend("topleft", legend = c("Flare","Trend"), 
                 lty = c(NA,1), pch = c(1,NA), col = c("red","#d400ff"),
                 cex = 1.5)
 
-plot(rawdata, main = "ground truth")
-points(rawdata[which(keplerflare_sim$states==2),], col = "red",lwd=3.0)
-points(rawdata[which(keplerflare_sim$states==3),], col = "blue",lwd=3.0)
+plot(injected, main = "ground truth")
+points(injected[which(keplerflare_sim$states==2),], col = "red",lwd=3.0)
+points(injected[which(keplerflare_sim$states==3),], col = "blue",lwd=3.0)
 
-plot(rawdata[,1],keplerflare_sim$flare, main = "flare channel")
+plot(injected[,1],keplerflare_sim$flare, main = "flare channel")
 
 dev.off()
 
