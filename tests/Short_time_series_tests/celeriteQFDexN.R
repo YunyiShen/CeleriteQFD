@@ -102,7 +102,7 @@ residual <- rawdata[,2] - celerite_trend
 
 flares3sigma <- residual >= (mean(residual) + 3 * sd(residual))
 
-save.image("../res164-174-cQFDexN.RData")
+save.image("../res031381302_6000-8000-cQFDexN.RData")
 load("../res164-174-cQFDexN.RData")
 
 pdf("./Res/CeleriteQFD/031381302_6000-8000/det_compare2.pdf", width = 7, height = 7.5)

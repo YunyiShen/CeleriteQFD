@@ -111,7 +111,7 @@ for(i in 1:n_rep){
     fitcelerite <- sampling(modelcelerite, data = QFD_data,control = list(adapt_delta = 0.95, max_treedepth=15), iter = 2000,init_r = 2, chains = 2)
     summcelerite <- summary(fitcelerite)
     celerite_trend <- summcelerite[[1]][1:N + (N+23),1]
-    residual <- rawdata[,2] - celerite_trend
+    residual <- injected[,2] - celerite_trend
 
     flares3sigma <- (residual >= (mean(residual) + 3 * sd(residual))) + 1
     res_df[i_res,1:7] <- c(n_inj,t_half,xm,alpha,offset,upper,i)
