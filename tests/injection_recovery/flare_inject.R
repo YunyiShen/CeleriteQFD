@@ -10,7 +10,7 @@ rawdata <- read.csv("./Data/tess2018206045859-s0001-0000000031381302-0120-s_lc.c
 rawdata[,2] <- rawdata[,2]-mean(rawdata[,2], na.rm = T)
 
 set.seed(12345)
-keplerflare_sim <- kepler_flare(rawdata[,1], .00005, 5,rPareto,xm = 5, alpha = 1, offset = 10, upper = 150) 
+keplerflare_sim <- kepler_flare(rawdata[,1], .00005, 5,rPareto,xm = 50, alpha = 1, offset = 0, upper = 300) 
 plot(keplerflare_sim$flare) 
 #rawdata <- na.omit(rawdata)
 
@@ -80,29 +80,36 @@ residual <- injected[,2] - celerite_trend
 
 flares3sigma <- residual >= (mean(residual) + 3 * sd(residual))
 
-jpeg("QFD_example.jpg", width = 8, height = 8, units = "in", res = 300)
+pdf("QFD_example_031381302.pdf", width = 9, height = 10)
 par(mfrow = c(4,1))
-plot(injected, main = "QFD")
-lines(injected[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
-points(injected[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
-points(injected[which(Viterbi_max==3)+1,], col = "blue",lwd=3.0)
-legend("topleft", legend = c("Firing","Decay","Trend"), 
-                lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
-                cex = 1.5)
-
-plot(injected, main = "1-3-sigma")
-lines(injected[,1], summcelerite[[1]][1:N + (N+23), 1], col = "#d400ff",lwd=3.0)
-points(injected[flares3sigma,], col = "red",lwd=3.0)
-legend("topleft", legend = c("Flare","Trend"), 
-                lty = c(NA,1), pch = c(1,NA), col = c("red","#d400ff"),
-                cex = 1.5)
 
 plot(injected, main = "ground truth")
 points(injected[which(keplerflare_sim$states==2),], col = "red",lwd=3.0)
 points(injected[which(keplerflare_sim$states==3),], col = "blue",lwd=3.0)
+legend("topleft", legend = c("Firing","Decay","Trend"), 
+                lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
+                cex = 1.2)
 
-plot(injected[,1],keplerflare_sim$flare, main = "flare channel")
+plot(injected, main = "proposed HMM")
+points(injected[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
+points(injected[which(Viterbi_max==3)+1,], col = "blue",lwd=3.0)
+lines(injected[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
+legend("topleft", legend = c("Firing","Decay","Trend"), 
+                lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
+                cex = 1.2)
+
+plot(injected, main = "sigma-clipping")
+points(injected[flares3sigma,], col = "red",lwd=3.0)
+lines(injected[,1], summcelerite[[1]][1:N + (N+23), 1], col = "#d400ff",lwd=3.0)
+legend("topleft", legend = c("Potential flare","Trend"), 
+                lty = c(NA,1), pch = c(1,NA), col = c("red","#d400ff"),
+                cex = 1.2)
+
+
+
+plot(injected[,1],keplerflare_sim$flare, main = "flare channel", xlab = "TIME", ylab = "FLUX")
 
 dev.off()
 
-save.image("../simple_flare_injection.RData")
+save.image("../simple_flare_injection_031381302.RData")
+

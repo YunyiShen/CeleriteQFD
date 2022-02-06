@@ -22,18 +22,18 @@ Some amount of injection-recovery simulation was done with TIC-131799991's time 
 
 One example run, compared with Celerite and 1-3-sigma rule
 
-![](https://github.com/YunyiShen/AstroHMMs/raw/master/Res/Injection_recover/small_flares/QFD_example.jpg)
+![](https://github.com/YunyiShen/AstroHMMs/raw/master/Res/Injection_recover/QFD_example_031381302.jpg)
 
 Result for 100 injection recovery simulations, evaluated by sensitivity and specificity:
 
-![](https://github.com/YunyiShen/AstroHMMs/raw/master/Res/Injection_recover/small_flares/injection-recoveryz-smallflare.jpg)
+![](https://github.com/YunyiShen/AstroHMMs/raw/master/Res/Injection_recover/031381302/injection-recoveryz-largeflare.jpg)
 
 
 ### Real data
 
 An example run from TIC 131799991
 
-![](https://github.com/YunyiShen/AstroHMMs/raw/master/Res/CeleriteQFD/131799991_16400-17400/det.png)
+![](https://github.com/YunyiShen/AstroHMMs/raw/master/Res/Real_data/031381302-det.jpg)
 
 The code to repeat this result is in `./tests/Short_time_series_tests/celeriteQFDexN.R`, it requires `rstan` (currently does not work for `cmdstan` due to the order it include C++ header files).
 

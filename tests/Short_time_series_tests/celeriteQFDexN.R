@@ -103,21 +103,23 @@ residual <- rawdata[,2] - celerite_trend
 flares3sigma <- residual >= (mean(residual) + 3 * sd(residual))
 
 save.image("../res031381302_6000-8000-cQFDexN.RData")
-load("../res164-174-cQFDexN.RData")
+load("../res031381302_6000-8000-cQFDexN.RData")
 
 pdf("./Res/CeleriteQFD/031381302_6000-8000/det_compare2.pdf", width = 7, height = 7.5)
 par(mfrow = c(2,1))
 plot(rawdata, main = "Proposed HMM", ylab = "Centered Flux", xlab = "Time")
-lines(rawdata[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
+
 points(rawdata[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
 points(rawdata[which(Viterbi_max==3)+1,], col = "blue",lwd=3.0)
+lines(rawdata[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
 legend("topleft", legend = c("Firing","Decay","Trend"), 
                 lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
                 cex = 1.5)
 
 plot(rawdata, main = "sigma-clipping", ylab = "Centered Flux", xlab = "Time")
-lines(rawdata[,1], summcelerite[[1]][1:N + (N+23), 1], col = "#d400ff",lwd=3.0)
+
 points(rawdata[flares3sigma,], col = "red",lwd=3.0)
+lines(rawdata[,1], summcelerite[[1]][1:N + (N+23), 1], col = "#d400ff",lwd=3.0)
 legend("topleft", legend = c("Potential Flares","Trend"), 
                 lty = c(NA,1), pch = c(1,NA), col = c("red","#d400ff"),
                 cex = 1.5)

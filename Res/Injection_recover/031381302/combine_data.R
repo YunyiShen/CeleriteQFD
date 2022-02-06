@@ -17,7 +17,7 @@ error_decoding <- function(decoding, states){
   res$FP <- count_success(location_FP, location_decoding)
   res$FN <- res$n_injected-res$TP
   res$SEN <- res$TP/res$n_injected
-  res$SPC <- res$TP/res$n_detected
+  res$SPC <- res$TP/(res$TP+res$FP)
   return(res)
   
 }
@@ -41,7 +41,7 @@ error_decoding_QFD <- function(decoding, states){
   res$FP <- count_success(location_FP, location_decoding)
   res$FN <- res$n_injected-res$TP
   res$SEN <- res$TP/res$n_injected
-  res$SPC <- res$TP/res$n_detected
+  res$SPC <- res$TP/(res$TP+res$FP)
   return(res)
   
 }
@@ -88,28 +88,32 @@ clean_CHTC_data <- function(thedir){
   
 }
 
-all_res_dir <- list.dirs()[-1]
+all_res_dir <- list.dirs()[-c(1,2)]
 
-all_res_df <- lapply(all_res_dir, clean_data)
+all_res_df <- lapply(all_res_dir, clean_CHTC_data)
 
 all_res_df1 <- Reduce(rbind, all_res_df)
-write.csv(all_res_df1,"small_flares_full.csv", row.names = F)
+write.csv(all_res_df1,"tiny_flares_full.csv", row.names = F)
 
 
 library(reshape2)
 library(ggplot2)
 
+colnames(all_res_df1)[14:15] <- c("Sensitivity","Specificity")
 plot_data <- melt(all_res_df1[,], measure.vars = colnames(all_res_df1)[9:15])
 
 
-ggplot(data = plot_data[plot_data$variable %in% c("SPC","SEN"),], aes(x=method,y = value)) + 
-  geom_point( alpha=0.1, size=1)+
+
+
+ggplot(data = plot_data[plot_data$variable %in% c("Sensitivity","Specificity"),], aes(x=method,y = value)) + 
+  geom_point( alpha=.1, size=.5, position = "jitter")+
   geom_boxplot(linetype = "dashed", outlier.shape = 1) + 
   stat_boxplot(aes(ymin = ..lower.., ymax = ..upper..), outlier.shape = 1) +
   stat_boxplot(geom = "errorbar", aes(ymin = ..ymax..), width = 0.5)+
   stat_boxplot(geom = "errorbar", aes(ymax = ..ymin..), width = 0.5)+
   facet_grid(~variable) + 
-  #ylab("Small flare detection") + 
+  #ylab("Small flare detection") +
+  ylab("") + 
   xlab("") + theme_bw() +
   theme(legend.position="top") + 
   theme(text = element_text(size=14), 
@@ -122,6 +126,7 @@ ggplot(data = plot_data[plot_data$variable %in% c("SPC","SEN"),], aes(x=method,y
         panel.grid.major = element_blank()) + 
   coord_flip()
 
+ggsave("../injection-recovery-small-flare.pdf")
 
 
 
