@@ -18,7 +18,7 @@ In current stage, several methods for simultaneous detrending and flare detectio
 
 ### Injection recovery
 
-Some amount of injection-recovery simulation was done with TIC-131799991's time series with injected (rather small) Kepler flares. 
+Some amount of injection-recovery simulation was done with TIC-031381302's time series with injected (rather small) Kepler flares. 
 
 One example run, compared with Celerite and 1-3-sigma rule
 
@@ -31,7 +31,7 @@ Result for 100 injection recovery simulations, evaluated by sensitivity and spec
 
 ### Real data
 
-An example run from TIC 131799991
+An example run from TIC 031381302
 
 ![](https://github.com/YunyiShen/AstroHMMs/raw/master/Res/Real_data/031381302-det.jpg)
 
