@@ -7,6 +7,7 @@ source("./CeleriteQFD/R/misc.R") # some helper
 source("./CeleriteQFD/R/simuFlares.R")
 file_num <- paste0(args[1],"-",args[2])
 base_dir <- paste0("./res_",args[1],"-",args[2],"/")
+scheme_id <- as.numeric(args[3])
 
 #rawdata <- read.csv("./CeleriteQFD/Data/tess2019006130736-s0007-0000000131799991-0131-s_lc.csv")[10000:11500,c("TIME","PDCSAP_FLUX")]
 rawdata <- read.csv("./CeleriteQFD/Data/tess2018206045859-s0001-0000000031381302-0120-s_lc.csv")[1:1500,c("TIME","PDCSAP_FLUX")]
@@ -15,18 +16,28 @@ rawdata <- na.omit(rawdata)
 rawdata[,2] <- rawdata[,2]-mean(rawdata[,2])
 N <- nrow(rawdata)
 
-res_path <- base_dir
-xm <- 10
-alpha <- 1
-offset <- 30
-upper <- 150
-n_inj <- 5
-t_half <- .00005
+schemes <- c("tiny","small","large","huge")
+xms <- c(5,10,50,100)
+alphas <- c(1,1,1,1)
+offsets <- c(10,30,0,0)
+uppers <- c(150,150,300,1000)
+n_injs <- c(5,5,5,5)
+t_halfs <- c(.00005,.00005, .00005, .00001 ) 
 
-gtstate_file <- paste0(res_path,"inj_rec_gtstate",".csv")
-flare_file <- paste0(res_path,"inj_rec_flare",".csv")
-QFD_file <- paste0(res_path,"inj_rec_QFD",".csv")
-trend_file <- paste0(res_path,"inj_rec_3sigma",".csv")
+res_path <- base_dir
+scheme <- schemes[scheme_id]
+xm <- xms[scheme_id]
+alpha <- alphas[scheme_id]
+offset <- offsets[scheme_id]
+upper <- uppers[scheme_id]
+n_inj <- n_injs[scheme_id]
+t_half <- t_halfs[scheme_id]
+
+gtstate_file <- paste0(res_path,"inj_rec_gtstate_",scheme,".csv")
+flare_file <- paste0(res_path,"inj_rec_flare_",scheme,".csv")
+QFD_file <- paste0(res_path,"inj_rec_QFD_",scheme,".csv")
+QFD_trend_file <- paste0(res_path,"inj_rec_QFD_trend_",scheme,".csv")
+celerite_trend_file <- paste0(res_path,"inj_rec_celerite_trend_",scheme,".csv")
 
 
 
@@ -43,12 +54,18 @@ modelQFD <- stan_model(file = './CeleriteQFD/Stan/Morphology/QFD/CeleriteQFDexN.
                              file.path(getwd(), 
                              'CeleriteQFD/celerite2/celerite2.hpp'), '"\n'))
 
-
+modelcelerite <- stan_model(file = './CeleriteQFD/Stan/Prototypes/Celerite/celerite.stan', 
+            model_name = "celerit2", 
+            allow_undefined = TRUE,
+            includes = paste0('\n#include "', 
+                             file.path(getwd(), 
+                             'CeleriteQFD/celerite2/celerite2.hpp'), '"\n'))
 
 gtstate_df <- data.frame(matrix(NA, n_rep, N))
 flare_df <- data.frame(matrix(NA,n_rep,N))
 QFD_df <- data.frame(matrix(NA, n_rep, N-1))
 trend_df <- data.frame(matrix(NA, n_rep, N))
+celerite_df <- data.frame(matrix(NA, n_rep, N))
 
 
 
@@ -94,6 +111,13 @@ for(i in 1:n_rep){
     QFD_df[i,] <- Viterbi_max
     trend_df[i,] <- trend
     write.csv(QFD_df,QFD_file)
-    write.csv(trend_df, trend_file)
+    write.csv(trend_df, QFD_trend_file)
     gc(verbose = F,full = T)
+
+    fitcelerite <- sampling(modelcelerite, data = QFD_data,control = list(adapt_delta = 0.95, max_treedepth=15), iter = 2000,init_r = 2, chains = 2)
+    summcelerite <- summary(fitcelerite)
+    celerite_trend <- summcelerite[[1]][1:N + (N+23),1]
+
+    celerite_df[i,] <- celerite_trend
+    write.csv(celerite_df, celerite_trend_file)
 }
