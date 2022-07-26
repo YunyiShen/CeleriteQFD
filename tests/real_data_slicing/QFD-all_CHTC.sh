@@ -1,5 +1,6 @@
 #!/bin/bash
 
+tar -xzf Data.tar.gz
 tar -xzf CeleriteQFD.tar.gz
 
 mkdir ./res-$1
