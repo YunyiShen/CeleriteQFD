@@ -56,6 +56,6 @@ QFD_samples <- as.data.frame(fitQFD)
 Viterbi_raw <- QFD_samples[,1:(N-1) + (N + 22)]
 QFD_trend_raw <- QFD_samples[,1:N+2*N+21]
 
-write.csv(QFD_samples,paste0(name_slice,"-QFD-samples.csv"))
+#write.csv(QFD_samples,paste0(name_slice,"-QFD-samples.csv"))
 write.csv(QFD_trend_raw,paste0(name_slice,"-QFD-trend.csv"))
 write.csv(Viterbi_raw,paste0(name_slice,"-QFD-Viterbi.csv"))
