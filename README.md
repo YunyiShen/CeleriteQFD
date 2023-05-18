@@ -33,7 +33,7 @@ Result for 100 injection recovery simulations, evaluated by sensitivity and spec
 
 An example run from TIC 031381302, with zooming in to part of the light curve that celerite absorbs some flare into trend.
 
-![](https://github.com/YunyiShen/AstroHMMs/raw/master/Res/CeleriteQFD/031381302_6000-8000.png)
+![](https://github.com/YunyiShen/AstroHMMs/raw/master/Res/CeleriteQFD/031381302_6000-8000/det_compare2.png)
 
 The code to repeat this result is in `./tests/Short_time_series_tests/celeriteQFDexN.R`, it requires `rstan` (currently does not work for `cmdstan` due to the order it include C++ header files).
 
