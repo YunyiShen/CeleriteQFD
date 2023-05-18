@@ -9,7 +9,7 @@ args <- as.numeric(args)
 all_slices <- list.files("./Data/TimeSeriesCSV_sliced", pattern = "csv",full.names = TRUE)
 the_slice <- all_slices[args + 1]
 
-name_slice <- paste0("./res-",args,"/", sub("csv","", the_slice))
+name_slice <- paste0("./res-",args,"/", sub("./Data/TimeSeriesCSV_sliced/","" ,sub(".csv","", the_slice)))
 
 rawdata <- read.csv(the_slice)[,c("TIME","PDCSAP_FLUX")]
 
