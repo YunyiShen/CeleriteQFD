@@ -107,48 +107,46 @@ flares3sigma <- residual >= (mean(residual) + 3 * sd(residual))
 save.image("../res031381302_6000-8000-cQFDexN.RData")
 load("../res031381302_6000-8000-cQFDexN.RData")
 
+
+#png("./Res/CeleriteQFD/031381302_6000-8000/det_compare2.png", width = 7, height = 5.5, units ="in" , res = 500)
 pdf("./Res/CeleriteQFD/031381302_6000-8000/det_compare2.pdf", width = 7, height = 5.5)
 par(mfrow = c(2,2),mar = c(3,3,2,2), mgp = c(1.8, 0.5, 0))
 par(fig = c(0,7,5,10)/10)
-plot(rawdata, main = "Proposed", ylab = "Centered Flux", xlab = "Time")
-points(rawdata[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
-points(rawdata[which(Viterbi_max==3)+1,], col = "blue",lwd=3.0)
+plot(rawdata, main = "Proposed", ylab = "Centered Flux", xlab = "Time", pch = 3)
+points(rawdata[which(Viterbi_max==2)+1,], col = "red",lwd=2.0, pch = 3)
+points(rawdata[which(Viterbi_max==3)+1,], col = "blue",lwd=2.0, pch = 3)
 lines(rawdata[,1], summQFD[[1]][1:N+2*N+21, 1], col = "#d400ff",lwd=3.0)
 
 rect(xleft = 1334.9, ybottom = -30, xright = 1335.25, ytop = 60, border = "orange", lwd = 2)
 #rect(xleft = 1336.05, ybottom = -30, xright = 1336.3, ytop = 60, border = "orange", lwd = 2)
 highlight_range <- rawdata[,1] >= 1334.9 & rawdata[,1] <= 1335.25
 legend("topleft", legend = c("Firing","Decay","Trend"), 
-                lty = c(NA,NA,1), pch = c(1,1,NA), col = c("red","blue","#d400ff"),
+                lty = c(NA,NA,1), pch = c(3,3,NA), col = c("red","blue","#d400ff"),
                 cex = 1.5)
 
 par(fig = c(7,10,5,10)/10, mar = c(3,0,2,1), new = T)
-plot(rawdata[highlight_range, ], ylab = "", xlab = "Time")
-points(rawdata[which(Viterbi_max==2)+1,], col = "red",lwd=3.0)
-points(rawdata[which(Viterbi_max==3)+1,], col = "blue",lwd=3.0)
+plot(rawdata[highlight_range, ], ylab = "", xlab = "Time", pch = 3)
+points(rawdata[which(Viterbi_max==2)+1,], col = "red",lwd=2.0, pch = 3)
+points(rawdata[which(Viterbi_max==3)+1,], col = "blue",lwd=2.0, pch = 3)
 lines(rawdata[highlight_range,1], summQFD[[1]][1:N+2*N+21, 1][highlight_range], col = "#d400ff",lwd=3.0)
 
 
 par(fig = c(0,7,0,5)/10, mar = c(3,3,2,2), new = T)
-plot(rawdata, main = "sigma-clipping", ylab = "Centered Flux", xlab = "Time")
-points(rawdata[flares3sigma,], col = "red",lwd=3.0)
+plot(rawdata, main = "sigma-clipping", ylab = "Centered Flux", xlab = "Time", pch = 3)
+points(rawdata[flares3sigma,], col = "red",lwd=2.0, pch = 3)
 lines(rawdata[,1], summcelerite[[1]][1:N + (N+23), 1], col = "#d400ff",lwd=3.0)
 rect(xleft = 1334.9, ybottom = -30, xright = 1335.25, ytop = 60, border = "orange", lwd = 2)
 #rect(xleft = 1336.05, ybottom = -30, xright = 1336.3, ytop = 60, border = "orange", lwd = 2)
 
 legend("topleft", legend = c("Potential Flares","Trend"), 
-                lty = c(NA,1), pch = c(1,NA), col = c("red","#d400ff"),
+                lty = c(NA,1), pch = c(3,NA), col = c("red","#d400ff"),
                 cex = 1.5)
 
 par(fig = c(7,10,0,5)/10, mar = c(3,0,2,1), new = T)
-plot(rawdata[highlight_range, ], ylab = "", xlab = "Time")
-points(rawdata[flares3sigma,], col = "red",lwd=3.0)
+plot(rawdata[highlight_range, ], ylab = "", xlab = "Time", pch = 3)
+points(rawdata[flares3sigma,], col = "red",lwd=2.0, pch = 3)
 lines(rawdata[highlight_range,1], summcelerite[[1]][1:N + (N+23), 1][highlight_range], 
       col = "#d400ff",lwd=3.0)
-
-
-
-
 dev.off()
 
 detrended_data <- data.frame(TIME = rawdata$TIME, detrended = rawdata[,2]-summQFD[[1]][1:N+2*N+21, 1])
